@@ -1,27 +1,6 @@
 import * as cheerio from "cheerio";
 
-export type SearchType = "web" | "images" | "videos";
-
-export interface SearchResult {
-  title: string;
-  url: string;
-  snippet?: string;
-  displayUrl?: string;
-  thumbnail?: string;
-  image?: string;
-}
-
-export interface SearchContext {
-  fetch: typeof fetch;
-  type?: SearchType;
-  page?: number;
-  language?: string;
-  timeRange?: string;
-  safeSearch?: number | string | boolean;
-  settings?: Record<string, any>;
-}
-
-function normalizeUrl(raw: string | undefined, baseDomain: string): string | undefined {
+function normalizeUrl(raw, baseDomain) {
   if (!raw) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return undefined;
@@ -30,21 +9,26 @@ function normalizeUrl(raw: string | undefined, baseDomain: string): string | und
   return trimmed;
 }
 
-function isStrictSafeSearch(val: SearchContext["safeSearch"]): boolean {
+function isStrictSafeSearch(val) {
   if (val === 2 || val === true) return true;
   if (typeof val === "string") {
     const normalized = val.trim().toLowerCase();
-    return normalized === "2" || normalized === "strict" || normalized === "high" || normalized === "family";
+    return (
+      normalized === "2" ||
+      normalized === "strict" ||
+      normalized === "high" ||
+      normalized === "family"
+    );
   }
   return false;
 }
 
-function buildSearchUrl(query: string, ctx: SearchContext): string {
+function buildSearchUrl(query, ctx) {
   const domain = ctx.settings?.domain || "yandex.com";
-  const searchType: SearchType = ctx.type || "web";
+  const searchType = ctx.type || "web";
   const pageIndex = Math.max(0, (ctx.page || 1) - 1);
 
-  const pathByType: Record<SearchType, string> = {
+  const pathByType = {
     web: "/search/",
     images: "/images/search",
     videos: "/video/search",
@@ -59,7 +43,7 @@ function buildSearchUrl(query: string, ctx: SearchContext): string {
     params.set("lang", ctx.language.split("-")[0]);
   }
 
-  const timeMap: Record<string, string> = {
+  const timeMap = {
     day: "77",
     week: "1",
     month: "2",
@@ -68,7 +52,6 @@ function buildSearchUrl(query: string, ctx: SearchContext): string {
     params.set("within", timeMap[ctx.timeRange]);
   }
 
-  // Forward Degoog's SafeSearch setting to Yandex's family filter flag
   if (isStrictSafeSearch(ctx.safeSearch)) {
     params.set("fy", "1");
   }
@@ -76,12 +59,9 @@ function buildSearchUrl(query: string, ctx: SearchContext): string {
   return `https://${domain}${pathByType[searchType]}?${params.toString()}`;
 }
 
-export async function search(
-  query: string,
-  context: SearchContext
-): Promise<{ results: SearchResult[]; error?: string }> {
+export async function search(query, context) {
   const domain = context.settings?.domain || "yandex.com";
-  const searchType: SearchType = context.type || "web";
+  const searchType = context.type || "web";
   const targetUrl = buildSearchUrl(query, context);
 
   const res = await context.fetch(targetUrl, {
@@ -97,25 +77,41 @@ export async function search(
 
   const html = await res.text();
 
-  if (html.includes("SmartCaptcha") || html.includes("showcaptcha") || res.url.includes("showcaptcha")) {
+  if (
+    html.includes("SmartCaptcha") ||
+    html.includes("showcaptcha") ||
+    res.url.includes("showcaptcha")
+  ) {
     return { results: [], error: "CAPTCHA challenge" };
   }
 
   const $ = cheerio.load(html);
-  const results: SearchResult[] = [];
+  const results = [];
 
   if (searchType === "images") {
-    // Parse embedded JSON state when present, falling back to DOM image cards
     $("[data-state]").each((_, el) => {
       const rawState = $(el).attr("data-state");
       if (!rawState || !rawState.includes("http")) return;
       try {
         const parsed = JSON.parse(rawState);
-        const items = Array.isArray(parsed?.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+        const items = Array.isArray(parsed?.items)
+          ? parsed.items
+          : Array.isArray(parsed)
+            ? parsed
+            : [];
         for (const item of items) {
-          const imgUrl = normalizeUrl(item?.url || item?.origUrl || item?.img_href, domain);
-          const thumbUrl = normalizeUrl(item?.thumb?.url || item?.thumbnail || item?.preview?.[0]?.url, domain);
-          const pageUrl = normalizeUrl(item?.snippet?.url || item?.referer || item?.url, domain);
+          const imgUrl = normalizeUrl(
+            item?.url || item?.origUrl || item?.img_href,
+            domain
+          );
+          const thumbUrl = normalizeUrl(
+            item?.thumb?.url || item?.thumbnail || item?.preview?.[0]?.url,
+            domain
+          );
+          const pageUrl = normalizeUrl(
+            item?.snippet?.url || item?.referer || item?.url,
+            domain
+          );
           const title = (item?.snippet?.title || item?.title || query).trim();
           if (imgUrl && pageUrl) {
             results.push({
@@ -136,10 +132,17 @@ export async function search(
       $(".SerpItem, .serp-item").each((_, el) => {
         const item = $(el);
         const imgEl = item.find("img").first();
-        const thumbUrl = normalizeUrl(imgEl.attr("src") || imgEl.attr("data-src"), domain);
+        const thumbUrl = normalizeUrl(
+          imgEl.attr("src") || imgEl.attr("data-src"),
+          domain
+        );
         const linkEl = item.find("a").first();
         const href = normalizeUrl(linkEl.attr("href"), domain);
-        const title = (imgEl.attr("alt") || linkEl.attr("aria-label") || query).trim();
+        const title = (
+          imgEl.attr("alt") ||
+          linkEl.attr("aria-label") ||
+          query
+        ).trim();
         if (href && thumbUrl) {
           results.push({
             title,
@@ -157,17 +160,26 @@ export async function search(
   if (searchType === "videos") {
     $(".serp-item, [data-fast-name='video']").each((_, el) => {
       const item = $(el);
-      const linkEl = item.find("a").filter((_, a) => Boolean($(a).attr("href"))).first();
+      const linkEl = item
+        .find("a")
+        .filter((_, a) => Boolean($(a).attr("href")))
+        .first();
       const url = normalizeUrl(linkEl.attr("href"), domain);
       const title =
         item.find("[class*='Title'], h2, h3").first().text().trim() ||
         linkEl.attr("aria-label")?.trim() ||
         linkEl.text().trim();
       const thumbUrl = normalizeUrl(
-        item.find("img").first().attr("src") || item.find("img").first().attr("data-src"),
+        item.find("img").first().attr("src") ||
+          item.find("img").first().attr("data-src"),
         domain
       );
-      const snippet = item.find("[class*='Duration'], [class*='Channel'], [class*='Snippet']").first().text().trim() || undefined;
+      const snippet =
+        item
+          .find("[class*='Duration'], [class*='Channel'], [class*='Snippet']")
+          .first()
+          .text()
+          .trim() || undefined;
 
       if (url && title && !url.includes("/video/search")) {
         results.push({
@@ -182,7 +194,6 @@ export async function search(
     return { results };
   }
 
-  // Default: web search
   $("li.serp-item[data-cid]").each((_, el) => {
     const item = $(el);
 
@@ -204,8 +215,11 @@ export async function search(
     }
 
     const snippet =
-      item.find(".OrganicTextContentSpan, .Organic-Text, .text-container").first().text().trim() ||
-      undefined;
+      item
+        .find(".OrganicTextContentSpan, .Organic-Text, .text-container")
+        .first()
+        .text()
+        .trim() || undefined;
 
     const displayUrl = item.find(".Path-Item").first().text().trim() || undefined;
 
