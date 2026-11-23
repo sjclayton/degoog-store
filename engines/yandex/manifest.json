@@ -4,7 +4,7 @@
   "version": "1.1.0",
   "type": "engine",
   "description": "Native Yandex web, image, and video search provider",
-  "main": "index.ts",
+  "main": "index.js",
   "types": ["web", "images", "videos"],
   "bangs": ["y", "yandex"],
   "hosts": ["yandex.com", "ya.ru"],
