@@ -9,7 +9,7 @@
     {
         "id": "yandex",
         "name": "Yandex",
-        "version": "1.0.0"
+        "version": "1.0.0",
         "path": "engines/yandex",
         "main": "index.js",
         "types": ["web", "images", "videos"],
