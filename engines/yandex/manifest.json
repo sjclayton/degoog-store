@@ -1,0 +1,20 @@
+{
+  "id": "custom-yandex-engine",
+  "name": "Yandex",
+  "version": "1.1.0",
+  "type": "engine",
+  "description": "Native Yandex web, image, and video search provider",
+  "main": "index.ts",
+  "types": ["web", "images", "videos"],
+  "bangs": ["y", "yandex"],
+  "hosts": ["yandex.com", "ya.ru"],
+  "settings": [
+    {
+      "key": "domain",
+      "label": "Yandex Domain",
+      "type": "select",
+      "default": "yandex.com",
+      "options": ["yandex.com", "ya.ru", "yandex.ru"]
+    }
+  ]
+}
