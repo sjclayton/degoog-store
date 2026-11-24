@@ -66,6 +66,6 @@ export const SETTINGS_SCHEMA = [
     type: "toggle",
     default: "true",
     description:
-      "On a captcha, try the legacy endpoint and then the other Yandex domain before giving up.",
+      "On a captcha, try the other Yandex domain, then the legacy endpoint, before giving up.",
   },
 ];

@@ -52,12 +52,12 @@ export default class YandexEngine {
 
   async executeSearch(query, page = 1, timeFilter, context) {
     const alternate = DOMAINS.find((candidate) => candidate !== this.domain);
-    const attempts = [
-      { domain: this.domain, legacy: false },
-      { domain: this.domain, legacy: true },
-    ];
+    const attempts = [{ domain: this.domain, legacy: false }];
     if (this.fallbackOnCaptcha && alternate) {
       attempts.push({ domain: alternate, legacy: false });
+    }
+    attempts.push({ domain: this.domain, legacy: true });
+    if (this.fallbackOnCaptcha && alternate) {
       attempts.push({ domain: alternate, legacy: true });
     }
 
