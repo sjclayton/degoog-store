@@ -29,7 +29,7 @@ export const resolveSafe = (engineSafe, context) => {
 };
 
 const SIZE_MAP = { small: "small", medium: "medium", large: "large" };
-const TYPE_MAP = { photo: "photo", clipart: "clipart" };
+const TYPE_MAP = { photo: "photo", clipart: "lineart" };
 const LAYOUT_MAP = { square: "square", wide: "horizontal", tall: "vertical" };
 
 export const buildSearchUrl = (query, page, safe, domain, imageFilter, legacy = false) => {
