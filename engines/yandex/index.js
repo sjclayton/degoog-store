@@ -6,6 +6,29 @@ export const description = "Yandex web, image and video search.";
 const NAME = "Yandex";
 const DOMAINS = ["yandex.com", "ya.ru"];
 const SAFE_SEARCH_MODES = ["off", "moderate", "strict"];
+const LANGUAGES = [
+  "auto",
+  "en",
+  "ru",
+  "be",
+  "fr",
+  "de",
+  "id",
+  "kk",
+  "tt",
+  "tr",
+  "uk",
+];
+const REGIONS = ["101", "177", "84", "102", "111", "225", "auto"];
+const REGION_LABELS = [
+  "Germany (Stuttgart) - least Russian in testing",
+  "Germany (Berlin)",
+  "USA",
+  "United Kingdom",
+  "Europe",
+  "Russia",
+  "Auto / no region",
+];
 const PATHS = {
   web: "/search/",
   images: "/images/search",
@@ -52,6 +75,25 @@ const SETTINGS_SCHEMA = [
     default: "moderate",
     description:
       "Off removes filtering, Moderate is Yandex's default, Strict enables family mode for web, images and videos.",
+  },
+  {
+    key: "language",
+    label: "Result language",
+    type: "select",
+    options: LANGUAGES,
+    default: "en",
+    description:
+      "Forces Yandex to bias results towards this language. Defaults to English, which is the strongest way to reduce Russian results on ya.ru.",
+  },
+  {
+    key: "region",
+    label: "Result region",
+    type: "select",
+    options: REGIONS,
+    optionLabels: REGION_LABELS,
+    default: "101",
+    description:
+      "Yandex 'lr' region. A non-Russian region further reduces Russian results. Germany (Stuttgart) scored best in testing.",
   },
   {
     key: "cookies",
@@ -265,6 +307,8 @@ export default class YandexEngine {
   bangShortcut = "y";
   domain = DOMAINS[0];
   safeSearch = "moderate";
+  language = "en";
+  region = "101";
   cookies = "";
   fallbackOnCaptcha = true;
   settingsSchema = SETTINGS_SCHEMA;
@@ -274,6 +318,8 @@ export default class YandexEngine {
     if (SAFE_SEARCH_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
+    if (LANGUAGES.includes(settings?.language)) this.language = settings.language;
+    if (REGIONS.includes(settings?.region)) this.region = settings.region;
     if (typeof settings?.cookies === "string" && settings.cookies !== "__SET__") {
       this.cookies = settings.cookies.trim();
     }
@@ -286,7 +332,12 @@ export default class YandexEngine {
       p: String(Math.max(0, (page || 1) - 1)),
     });
 
-    if (context?.lang) params.set("lang", context.lang.split("-")[0]);
+    const lang =
+      this.language === "auto"
+        ? context?.lang?.split("-")[0]
+        : this.language;
+    if (lang) params.set("lang", lang);
+    if (this.region !== "auto") params.set("lr", this.region);
     if (timeFilter && WITHIN[timeFilter]) params.set("within", WITHIN[timeFilter]);
 
     if (this.safeSearch === "strict") params.set("family", "yes");
