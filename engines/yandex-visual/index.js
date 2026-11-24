@@ -13,6 +13,7 @@ import { initialState, parseCbirId, parseResults } from "./parse.js";
 
 export const type = "images";
 export const input = "image";
+export const site = "https://yandex.com/";
 export const description =
   "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images. Adult results are not blocked when safe search is off.";
 
