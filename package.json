@@ -12,6 +12,13 @@
       "description": "Yandex web search. Choose yandex.com or ya.ru, a safe-search level, result language and region in the engine settings.",
       "version": "1.2.0",
       "type": "web"
+    },
+    {
+      "path": "engines/yandex-images",
+      "name": "Yandex Images",
+      "description": "Yandex image search. No query-level keyword blocks, safe-search level with unblurred thumbnails when off, size, type and layout filters.",
+      "version": "1.0.0",
+      "type": "images"
     }
   ],
   "transports": [],
