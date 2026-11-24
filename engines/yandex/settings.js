@@ -8,6 +8,15 @@ import {
 
 export const SETTINGS_SCHEMA = [
   {
+    key: "outgoingTransport",
+    label: "Outgoing HTTP client transport",
+    type: "select",
+    options: ["curl", "curl-fallback", "fetch"],
+    default: "curl",
+    description:
+      "Yandex blocks Bun's fetch with a verification/SmartCaptcha page, so curl is required.",
+  },
+  {
     key: "domain",
     label: "Yandex domain",
     type: "select",
