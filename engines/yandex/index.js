@@ -1,7 +1,8 @@
 import * as cheerio from "cheerio";
 
-export const type = ["web", "images", "videos"];
-export const description = "Yandex web, image and video search.";
+export const type = "web";
+export const description = "Yandex web search.";
+export const site = "https://yandex.com/";
 
 const NAME = "Yandex";
 const DOMAINS = ["yandex.com", "ya.ru"];
@@ -29,11 +30,6 @@ const REGION_LABELS = [
   "Russia",
   "Auto / no region",
 ];
-const PATHS = {
-  web: "/search/",
-  images: "/images/search",
-  videos: "/video/search",
-};
 const WITHIN = {
   hour: "77",
   day: "77",
@@ -74,7 +70,7 @@ const SETTINGS_SCHEMA = [
     options: SAFE_SEARCH_MODES,
     default: "moderate",
     description:
-      "Off removes filtering, Moderate is Yandex's default, Strict enables family mode for web, images and videos.",
+      "Off removes filtering, Moderate is Yandex's default, Strict enables family mode.",
   },
   {
     key: "language",
@@ -105,11 +101,11 @@ const SETTINGS_SCHEMA = [
   },
   {
     key: "fallbackOnCaptcha",
-    label: "Retry on the other domain after a captcha",
+    label: "Retry after a captcha",
     type: "toggle",
     default: "true",
     description:
-      "If the selected domain serves a captcha, try the same search once on the other domain before giving up.",
+      "On a captcha, try the legacy endpoint and then the other Yandex domain before giving up.",
   },
 ];
 
@@ -133,20 +129,6 @@ const isYandexUrl = (url) => {
   } catch {
     return true;
   }
-};
-
-const readState = (html, pick) => {
-  const $ = cheerio.load(html);
-  let found;
-  $("[data-state]").each((_, el) => {
-    if (found) return;
-    const raw = $(el).attr("data-state") ?? "";
-    if (!raw.startsWith("{")) return;
-    try {
-      found = pick(JSON.parse(raw));
-    } catch {}
-  });
-  return found;
 };
 
 const parseWeb = ($, domain, name) => {
@@ -206,101 +188,6 @@ const parseLegacyWeb = ($, domain, name) => {
   return results;
 };
 
-const parseImages = (html, domain, name) => {
-  const entities = readState(
-    html,
-    (state) => state?.initialState?.serpList?.items?.entities,
-  );
-  const results = [];
-
-  if (entities && typeof entities === "object") {
-    for (const item of Object.values(entities)) {
-      const viewer = item?.viewerData ?? {};
-      const imageUrl = absolute(
-        item?.origUrl || viewer.img_href || viewer.preview?.[0]?.url || item?.image,
-        domain,
-      );
-      const thumbnail = absolute(viewer.thumb?.url || item?.image, domain);
-      const url = absolute(item?.snippet?.url || viewer.snippet?.url, domain);
-      const title =
-        cleanText(item?.snippet?.title || item?.alt || viewer.snippet?.title);
-      if (!imageUrl || !thumbnail || !url || isYandexUrl(url) || !title) continue;
-      results.push({
-        title,
-        url,
-        snippet: cleanText(viewer.snippet?.text) || "",
-        source: name,
-        thumbnail,
-        imageUrl,
-        displayUrl: item?.snippet?.domain || viewer.snippet?.domain,
-      });
-    }
-  }
-
-  if (results.length === 0) {
-    const $ = cheerio.load(html);
-    $(".SerpItem, .serp-item").each((_, el) => {
-      const item = $(el);
-      const img = item.find("img").first();
-      const thumbnail = absolute(img.attr("src") || img.attr("data-src"), domain);
-      const link = item.find("a").first();
-      const url = absolute(link.attr("href"), domain);
-      if (!thumbnail || !url || isYandexUrl(url)) return;
-      results.push({
-        title: cleanText(img.attr("alt") || link.attr("aria-label")) || name,
-        url,
-        snippet: "",
-        source: name,
-        thumbnail,
-        imageUrl: thumbnail,
-      });
-    });
-  }
-
-  return results;
-};
-
-const parseVideos = ($, domain, name) => {
-  const results = [];
-  $(".VideoSnippet").each((_, el) => {
-    const item = $(el).closest("li");
-    const titleLink = item.find("a.VideoSnippet-Title").first();
-    const title = cleanText(titleLink.attr("title") || titleLink.text());
-    const hostLink = item.find("a.VideoHostExtended-Host").first();
-    const url = absolute(hostLink.attr("href") || titleLink.attr("href"), domain);
-    if (!title || !url || isYandexUrl(url)) return;
-
-    const poster = item.find("video").first().attr("poster");
-    const style = item.find(".VideoThumb3").first().attr("style") ?? "";
-    const background = /background-image:\s*url\(["']?([^"')]+)["']?\)/.exec(style)?.[1];
-    const thumbnail = absolute(poster || background, domain);
-    const duration = item.find(".VideoThumb3Meta-Duration").first().text().trim();
-    const published = item
-      .find(".VideoSnippet-MetaPoint_kind_date")
-      .first()
-      .contents()
-      .filter((_, node) => node.type === "text")
-      .text()
-      .trim();
-    let iso;
-    if (/^\d{1,2}\s+\w+\s+\d{4}$/.test(published)) {
-      const parsed = new Date(published);
-      if (!Number.isNaN(parsed.getTime())) iso = parsed.toISOString().slice(0, 10);
-    }
-
-    results.push({
-      title,
-      url,
-      snippet: hostLink.text().trim() || undefined,
-      source: name,
-      thumbnail,
-      duration: duration || undefined,
-      publishedAt: iso,
-    });
-  });
-  return results;
-};
-
 export default class YandexEngine {
   isClientExposed = false;
   name = NAME;
@@ -326,7 +213,7 @@ export default class YandexEngine {
     this.fallbackOnCaptcha = settings?.fallbackOnCaptcha !== "false";
   }
 
-  buildUrl(query, page, timeFilter, context, searchType, domain = this.domain, legacy = false) {
+  buildUrl(query, page, timeFilter, context, domain = this.domain, legacy = false) {
     const params = new URLSearchParams({
       text: query,
       p: String(Math.max(0, (page || 1) - 1)),
@@ -349,7 +236,7 @@ export default class YandexEngine {
       params.set("frame", "1");
       params.set("searchid", "3131712");
     }
-    const path = legacy && searchType === "web" ? "/search/site/" : PATHS[searchType];
+    const path = legacy ? "/search/site/" : "/search/";
     return `https://${domain}${path}?${params.toString()}`;
   }
 
@@ -362,16 +249,14 @@ export default class YandexEngine {
   }
 
   async executeSearch(query, page = 1, timeFilter, context) {
-    const requested = context?.searchType;
-    const searchType = Object.hasOwn(PATHS, requested) ? requested : "web";
     const alternate = DOMAINS.find((candidate) => candidate !== this.domain);
-    const attempts = [{ domain: this.domain, legacy: false }];
-    if (searchType === "web") attempts.push({ domain: this.domain, legacy: true });
+    const attempts = [
+      { domain: this.domain, legacy: false },
+      { domain: this.domain, legacy: true },
+    ];
     if (this.fallbackOnCaptcha && alternate) {
       attempts.push({ domain: alternate, legacy: false });
-      if (searchType === "web") {
-        attempts.push({ domain: alternate, legacy: true });
-      }
+      attempts.push({ domain: alternate, legacy: true });
     }
 
     for (const attempt of attempts) {
@@ -381,7 +266,6 @@ export default class YandexEngine {
           page,
           timeFilter,
           context,
-          searchType,
           attempt.domain,
           attempt.legacy,
         );
@@ -392,10 +276,10 @@ export default class YandexEngine {
     throw this._blocked(context, `on ${this.domain}`);
   }
 
-  async _run(query, page, timeFilter, context, searchType, domain, legacy) {
+  async _run(query, page, timeFilter, context, domain, legacy) {
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
-      this.buildUrl(query, page, timeFilter, context, searchType, domain, legacy),
+      this.buildUrl(query, page, timeFilter, context, domain, legacy),
       {
         headers: {
           "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
@@ -426,9 +310,6 @@ export default class YandexEngine {
     }
 
     const $ = cheerio.load(html);
-    if (searchType === "images") return parseImages(html, domain, this.name);
-    if (searchType === "videos") return parseVideos($, domain, this.name);
-    if (legacy) return parseLegacyWeb($, domain, this.name);
-    return parseWeb($, domain, this.name);
+    return legacy ? parseLegacyWeb($, domain, this.name) : parseWeb($, domain, this.name);
   }
 }
