@@ -1,244 +1,278 @@
 import * as cheerio from "cheerio";
 
-function normalizeUrl(raw, baseDomain) {
-  if (!raw) return undefined;
-  const trimmed = raw.trim();
-  if (!trimmed) return undefined;
-  if (trimmed.startsWith("//")) return `https:${trimmed}`;
-  if (trimmed.startsWith("/")) return `https://${baseDomain}${trimmed}`;
-  return trimmed;
-}
+export const type = ["web", "images", "videos"];
+export const description = "Yandex web, image and video search.";
 
-function isStrictSafeSearch(val) {
-  if (val === 2 || val === true) return true;
-  if (typeof val === "string") {
-    const normalized = val.trim().toLowerCase();
-    return (
-      normalized === "2" ||
-      normalized === "strict" ||
-      normalized === "high" ||
-      normalized === "family"
-    );
+const NAME = "Yandex";
+const DOMAINS = ["yandex.com", "ya.ru"];
+const SAFE_SEARCH_MODES = ["off", "moderate", "strict"];
+const PATHS = {
+  web: "/search/",
+  images: "/images/search",
+  videos: "/video/search",
+};
+const WITHIN = {
+  hour: "77",
+  day: "77",
+  week: "9",
+  month: "2",
+  year: "5",
+};
+const CAPTCHA_RE = /SmartCaptcha|showcaptcha|smart-captcha|[?&]captcha=/i;
+const FALLBACK_UA =
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+const SETTINGS_SCHEMA = [
+  {
+    key: "domain",
+    label: "Yandex domain",
+    type: "select",
+    options: DOMAINS,
+    default: "yandex.com",
+    description: "Which Yandex site to search: yandex.com or ya.ru.",
+  },
+  {
+    key: "safeSearch",
+    label: "Safe Search",
+    type: "select",
+    options: SAFE_SEARCH_MODES,
+    default: "moderate",
+    description:
+      "Off removes filtering, Moderate is Yandex's default, Strict enables family mode for web, images and videos.",
+  },
+];
+
+const absolute = (raw, domain) => {
+  if (typeof raw !== "string") return undefined;
+  const value = raw.trim();
+  if (!value) return undefined;
+  if (value.startsWith("//")) return `https:${value}`;
+  if (value.startsWith("/")) return `https://${domain}${value}`;
+  if (/^https?:\/\//i.test(value)) return value;
+  return undefined;
+};
+
+const cleanText = (value) =>
+  typeof value === "string" ? cheerio.load(`<span>${value}</span>`).text().trim() : "";
+
+const isYandexUrl = (url) => {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return host === "yandex.com" || host === "ya.ru" || host === "yandex.ru";
+  } catch {
+    return true;
   }
-  return false;
-}
+};
+
+const readState = (html, pick) => {
+  const $ = cheerio.load(html);
+  let found;
+  $("[data-state]").each((_, el) => {
+    if (found) return;
+    const raw = $(el).attr("data-state") ?? "";
+    if (!raw.startsWith("{")) return;
+    try {
+      found = pick(JSON.parse(raw));
+    } catch {}
+  });
+  return found;
+};
+
+const parseWeb = ($, domain, name) => {
+  const results = [];
+  $("li.serp-item[data-cid]").each((_, el) => {
+    const item = $(el);
+    if (item.find(".Label_theme_direct, [data-fast-name='adv']").length > 0) return;
+
+    const link = item.find("a.OrganicTitle-Link, h2 a").first();
+    const title = link.text().trim();
+    let url = absolute(link.attr("href"), domain);
+    if ((!url || isYandexUrl(url)) && !title) return;
+
+    if (!url || isYandexUrl(url)) {
+      url = absolute(item.find("a.OrganicHost-Link").first().attr("href"), domain);
+    }
+    if (!url || isYandexUrl(url) || !title) return;
+
+    const snippet =
+      cleanText(
+        item
+          .find(".OrganicTextContent, .OrganicText, [class*='OrganicTextContent']")
+          .first()
+          .html() ?? "",
+      ) || undefined;
+
+    results.push({
+      title,
+      url,
+      snippet,
+      source: name,
+      displayUrl: item.find(".Path-Item").first().text().trim() || undefined,
+    });
+  });
+  return results;
+};
+
+const parseImages = (html, domain, name) => {
+  const entities = readState(
+    html,
+    (state) => state?.initialState?.serpList?.items?.entities,
+  );
+  const results = [];
+
+  if (entities && typeof entities === "object") {
+    for (const item of Object.values(entities)) {
+      const viewer = item?.viewerData ?? {};
+      const imageUrl = absolute(
+        item?.origUrl || viewer.img_href || viewer.preview?.[0]?.url || item?.image,
+        domain,
+      );
+      const thumbnail = absolute(viewer.thumb?.url || item?.image, domain);
+      const url = absolute(item?.snippet?.url || viewer.snippet?.url, domain);
+      const title =
+        cleanText(item?.snippet?.title || item?.alt || viewer.snippet?.title);
+      if (!imageUrl || !thumbnail || !url || isYandexUrl(url) || !title) continue;
+      results.push({
+        title,
+        url,
+        snippet: cleanText(viewer.snippet?.text) || "",
+        source: name,
+        thumbnail,
+        imageUrl,
+        displayUrl: item?.snippet?.domain || viewer.snippet?.domain,
+      });
+    }
+  }
+
+  if (results.length === 0) {
+    const $ = cheerio.load(html);
+    $(".SerpItem, .serp-item").each((_, el) => {
+      const item = $(el);
+      const img = item.find("img").first();
+      const thumbnail = absolute(img.attr("src") || img.attr("data-src"), domain);
+      const link = item.find("a").first();
+      const url = absolute(link.attr("href"), domain);
+      if (!thumbnail || !url || isYandexUrl(url)) return;
+      results.push({
+        title: cleanText(img.attr("alt") || link.attr("aria-label")) || name,
+        url,
+        snippet: "",
+        source: name,
+        thumbnail,
+        imageUrl: thumbnail,
+      });
+    });
+  }
+
+  return results;
+};
+
+const parseVideos = ($, domain, name) => {
+  const results = [];
+  $(".VideoSnippet").each((_, el) => {
+    const item = $(el).closest("li");
+    const titleLink = item.find("a.VideoSnippet-Title").first();
+    const title = cleanText(titleLink.attr("title") || titleLink.text());
+    const hostLink = item.find("a.VideoHostExtended-Host").first();
+    const url = absolute(hostLink.attr("href") || titleLink.attr("href"), domain);
+    if (!title || !url || isYandexUrl(url)) return;
+
+    const poster = item.find("video").first().attr("poster");
+    const style = item.find(".VideoThumb3").first().attr("style") ?? "";
+    const background = /background-image:\s*url\(["']?([^"')]+)["']?\)/.exec(style)?.[1];
+    const thumbnail = absolute(poster || background, domain);
+    const duration = item.find(".VideoThumb3Meta-Duration").first().text().trim();
+    const published = item
+      .find(".VideoSnippet-MetaPoint_kind_date")
+      .first()
+      .contents()
+      .filter((_, node) => node.type === "text")
+      .text()
+      .trim();
+    let iso;
+    if (/^\d{1,2}\s+\w+\s+\d{4}$/.test(published)) {
+      const parsed = new Date(published);
+      if (!Number.isNaN(parsed.getTime())) iso = parsed.toISOString().slice(0, 10);
+    }
+
+    results.push({
+      title,
+      url,
+      snippet: hostLink.text().trim() || undefined,
+      source: name,
+      thumbnail,
+      duration: duration || undefined,
+      publishedAt: iso,
+    });
+  });
+  return results;
+};
 
 export default class YandexEngine {
-  buildUrl(query, ctx = {}) {
-    const domain = ctx.settings?.domain || "yandex.com";
-    const searchType = ctx.type || "web";
-    const pageIndex = Math.max(0, (ctx.page || 1) - 1);
+  isClientExposed = false;
+  name = NAME;
+  bangShortcut = "y";
+  domain = DOMAINS[0];
+  safeSearch = "moderate";
+  settingsSchema = SETTINGS_SCHEMA;
 
-    const pathByType = {
-      web: "/search/",
-      images: "/images/search",
-      videos: "/video/search",
-    };
-
-    const params = new URLSearchParams({
-      text: query,
-      p: String(pageIndex),
-    });
-
-    if (ctx.language) {
-      params.set("lang", ctx.language.split("-")[0]);
+  configure(settings) {
+    if (DOMAINS.includes(settings?.domain)) this.domain = settings.domain;
+    if (SAFE_SEARCH_MODES.includes(settings?.safeSearch)) {
+      this.safeSearch = settings.safeSearch;
     }
-
-    const timeMap = {
-      day: "77",
-      week: "1",
-      month: "2",
-    };
-    if (ctx.timeRange && timeMap[ctx.timeRange]) {
-      params.set("within", timeMap[ctx.timeRange]);
-    }
-
-    if (isStrictSafeSearch(ctx.safeSearch)) {
-      params.set("fy", "1");
-    }
-
-    return `https://${domain}${pathByType[searchType]}?${params.toString()}`;
   }
 
-  async search(query, context = {}) {
-    const domain = context.settings?.domain || "yandex.com";
-    const searchType = context.type || "web";
-    const targetUrl = this.buildUrl(query, context);
-
-    const res = await context.fetch(targetUrl, {
-      headers: {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": context.language || "en-US,en;q=0.9",
-      },
+  buildUrl(query, page, timeFilter, context, searchType) {
+    const params = new URLSearchParams({
+      text: query,
+      p: String(Math.max(0, (page || 1) - 1)),
     });
 
-    if (!res.ok) {
-      return { results: [], error: `HTTP ${res.status}` };
-    }
+    if (context?.lang) params.set("lang", context.lang.split("-")[0]);
+    if (timeFilter && WITHIN[timeFilter]) params.set("within", WITHIN[timeFilter]);
 
-    const html = await res.text();
+    if (this.safeSearch === "strict") params.set("family", "yes");
+    if (this.safeSearch === "off") params.set("adult", "1");
 
-    if (
-      html.includes("SmartCaptcha") ||
-      html.includes("showcaptcha") ||
-      res.url?.includes("showcaptcha")
-    ) {
-      return { results: [], error: "CAPTCHA challenge" };
+    return `https://${this.domain}${PATHS[searchType]}?${params.toString()}`;
+  }
+
+  _blocked(context, where) {
+    const message = `${NAME} asked for a captcha ${where}`;
+    return (
+      context?.engineError?.("captcha", message, { engine: NAME }) ??
+      new Error(message)
+    );
+  }
+
+  async executeSearch(query, page = 1, timeFilter, context) {
+    const requested = context?.searchType;
+    const searchType = Object.hasOwn(PATHS, requested) ? requested : "web";
+    const doFetch = context?.fetch ?? fetch;
+    const response = await doFetch(
+      this.buildUrl(query, page, timeFilter, context, searchType),
+      {
+        headers: {
+          "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+          "Accept-Language":
+            context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
+        },
+        redirect: "follow",
+      },
+    );
+    context?.sentinel?.(response, this.name);
+
+    const html = await response.text();
+    if (CAPTCHA_RE.test(response.url ?? "") || CAPTCHA_RE.test(html)) {
+      throw this._blocked(context, "on the results page");
     }
 
     const $ = cheerio.load(html);
-    const results = [];
-
-    const pushResult = (entry) => {
-      results.push(entry);
-      if (typeof context.emit === "function") {
-        context.emit("result", entry);
-      }
-    };
-
-    if (searchType === "images") {
-      $("[data-state]").each((_, el) => {
-        const rawState = $(el).attr("data-state");
-        if (!rawState || !rawState.includes("http")) return;
-        try {
-          const parsed = JSON.parse(rawState);
-          const items = Array.isArray(parsed?.items)
-            ? parsed.items
-            : Array.isArray(parsed)
-              ? parsed
-              : [];
-          for (const item of items) {
-            const imgUrl = normalizeUrl(
-              item?.url || item?.origUrl || item?.img_href,
-              domain
-            );
-            const thumbUrl = normalizeUrl(
-              item?.thumb?.url || item?.thumbnail || item?.preview?.[0]?.url,
-              domain
-            );
-            const pageUrl = normalizeUrl(
-              item?.snippet?.url || item?.referer || item?.url,
-              domain
-            );
-            const title = (item?.snippet?.title || item?.title || query).trim();
-            if (imgUrl && pageUrl) {
-              pushResult({
-                title,
-                url: pageUrl,
-                image: imgUrl,
-                thumbnail: thumbUrl || imgUrl,
-                displayUrl: item?.snippet?.domain,
-              });
-            }
-          }
-        } catch {
-          // Ignore non-JSON state attributes
-        }
-      });
-
-      if (results.length === 0) {
-        $(".SerpItem, .serp-item").each((_, el) => {
-          const item = $(el);
-          const imgEl = item.find("img").first();
-          const thumbUrl = normalizeUrl(
-            imgEl.attr("src") || imgEl.attr("data-src"),
-            domain
-          );
-          const linkEl = item.find("a").first();
-          const href = normalizeUrl(linkEl.attr("href"), domain);
-          const title = (
-            imgEl.attr("alt") ||
-            linkEl.attr("aria-label") ||
-            query
-          ).trim();
-          if (href && thumbUrl) {
-            pushResult({
-              title,
-              url: href,
-              thumbnail: thumbUrl,
-              image: thumbUrl,
-            });
-          }
-        });
-      }
-
-      return { results };
-    }
-
-    if (searchType === "videos") {
-      $(".serp-item, [data-fast-name='video']").each((_, el) => {
-        const item = $(el);
-        const linkEl = item
-          .find("a")
-          .filter((_, a) => Boolean($(a).attr("href")))
-          .first();
-        const url = normalizeUrl(linkEl.attr("href"), domain);
-        const title =
-          item.find("[class*='Title'], h2, h3").first().text().trim() ||
-          linkEl.attr("aria-label")?.trim() ||
-          linkEl.text().trim();
-        const thumbUrl = normalizeUrl(
-          item.find("img").first().attr("src") ||
-            item.find("img").first().attr("data-src"),
-          domain
-        );
-        const snippet =
-          item
-            .find("[class*='Duration'], [class*='Channel'], [class*='Snippet']")
-            .first()
-            .text()
-            .trim() || undefined;
-
-        if (url && title && !url.includes("/video/search")) {
-          pushResult({
-            title,
-            url,
-            snippet,
-            thumbnail: thumbUrl,
-          });
-        }
-      });
-
-      return { results };
-    }
-
-    $("li.serp-item[data-cid]").each((_, el) => {
-      const item = $(el);
-
-      if (item.find(".Label_theme_direct, [data-fast-name='adv']").length > 0) {
-        return;
-      }
-
-      const linkEl = item.find("a.OrganicTitle-Link, h2 a").first();
-      let url = linkEl.attr("href") || "";
-      const title = linkEl.text().trim();
-
-      if (!url || !title || url.startsWith("/") || url.includes("yandex.ru/clck")) {
-        const cleanHref = item.find("a.Path-Item").first().attr("href");
-        if (cleanHref && cleanHref.startsWith("http")) {
-          url = cleanHref;
-        } else {
-          return;
-        }
-      }
-
-      const snippet =
-        item
-          .find(".OrganicTextContentSpan, .Organic-Text, .text-container")
-          .first()
-          .text()
-          .trim() || undefined;
-
-      const displayUrl = item.find(".Path-Item").first().text().trim() || undefined;
-
-      pushResult({
-        title,
-        url,
-        snippet,
-        displayUrl,
-      });
-    });
-
-    return { results };
+    if (searchType === "images") return parseImages(html, this.domain, this.name);
+    if (searchType === "videos") return parseVideos($, this.domain, this.name);
+    return parseWeb($, this.domain, this.name);
   }
 }

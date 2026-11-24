@@ -7,14 +7,11 @@
   "themes": [],
   "engines": [
     {
-        "id": "yandex",
-        "name": "Yandex",
-        "version": "1.0.0",
-        "path": "engines/yandex",
-        "main": "index.js",
-        "types": ["web", "images", "videos"],
-        "bangs": ["!y", "!yandex"],
-        "hosts": ["yandex.com", "ya.ru"]
+      "path": "engines/yandex",
+      "name": "Yandex",
+      "description": "Yandex web, image and video search. Choose yandex.com or ya.ru and a safe-search level in the engine settings.",
+      "version": "1.1.0",
+      "type": "web,images,videos"
     }
   ],
   "transports": [],
