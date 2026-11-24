@@ -18,7 +18,20 @@ const WITHIN = {
   month: "2",
   year: "5",
 };
-const CAPTCHA_RE = /SmartCaptcha|showcaptcha|smart-captcha|[?&]captcha=/i;
+const CAPTCHA_RE = /showcaptcha|[?&]captcha=/i;
+const CAPTCHA_MARKERS = [
+  "SmartCaptcha",
+  "captcha__image",
+  "captcha-required",
+  "Подтвердите, что запросы отправляли вы",
+  "я не робот",
+];
+const isCaptcha = (response, html) => {
+  if (response?.headers?.get?.("x-yandex-captcha") === "captcha") return true;
+  if (CAPTCHA_RE.test(response?.url ?? "")) return true;
+  const lower = html.toLowerCase();
+  return CAPTCHA_MARKERS.some((marker) => lower.includes(marker.toLowerCase()));
+};
 const FALLBACK_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
@@ -39,6 +52,22 @@ const SETTINGS_SCHEMA = [
     default: "moderate",
     description:
       "Off removes filtering, Moderate is Yandex's default, Strict enables family mode for web, images and videos.",
+  },
+  {
+    key: "cookies",
+    label: "Yandex cookies (optional)",
+    type: "textarea",
+    secret: true,
+    description:
+      "Paste the Cookie header from a logged-in Yandex browser session. A real session lowers the captcha rate. Keep it private.",
+  },
+  {
+    key: "fallbackOnCaptcha",
+    label: "Retry on the other domain after a captcha",
+    type: "toggle",
+    default: "true",
+    description:
+      "If the selected domain serves a captcha, try the same search once on the other domain before giving up.",
   },
 ];
 
@@ -214,6 +243,8 @@ export default class YandexEngine {
   bangShortcut = "y";
   domain = DOMAINS[0];
   safeSearch = "moderate";
+  cookies = "";
+  fallbackOnCaptcha = true;
   settingsSchema = SETTINGS_SCHEMA;
 
   configure(settings) {
@@ -221,9 +252,13 @@ export default class YandexEngine {
     if (SAFE_SEARCH_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
+    if (typeof settings?.cookies === "string" && settings.cookies !== "__SET__") {
+      this.cookies = settings.cookies.trim();
+    }
+    this.fallbackOnCaptcha = settings?.fallbackOnCaptcha !== "false";
   }
 
-  buildUrl(query, page, timeFilter, context, searchType) {
+  buildUrl(query, page, timeFilter, context, searchType, domain = this.domain) {
     const params = new URLSearchParams({
       text: query,
       p: String(Math.max(0, (page || 1) - 1)),
@@ -235,7 +270,7 @@ export default class YandexEngine {
     if (this.safeSearch === "strict") params.set("family", "yes");
     if (this.safeSearch === "off") params.set("adult", "1");
 
-    return `https://${this.domain}${PATHS[searchType]}?${params.toString()}`;
+    return `https://${domain}${PATHS[searchType]}?${params.toString()}`;
   }
 
   _blocked(context, where) {
@@ -249,9 +284,13 @@ export default class YandexEngine {
   async executeSearch(query, page = 1, timeFilter, context) {
     const requested = context?.searchType;
     const searchType = Object.hasOwn(PATHS, requested) ? requested : "web";
+    return this._run(query, page, timeFilter, context, searchType, this.domain, true);
+  }
+
+  async _run(query, page, timeFilter, context, searchType, domain, allowFallback) {
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
-      this.buildUrl(query, page, timeFilter, context, searchType),
+      this.buildUrl(query, page, timeFilter, context, searchType, domain),
       {
         headers: {
           "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
@@ -259,6 +298,17 @@ export default class YandexEngine {
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "Accept-Language":
             context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-User": "?1",
+          "Upgrade-Insecure-Requests": "1",
+          "sec-ch-ua":
+            '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": '"Linux"',
+          ...(this.cookies ? { Cookie: this.cookies } : {}),
         },
         redirect: "follow",
       },
@@ -266,13 +316,19 @@ export default class YandexEngine {
     context?.sentinel?.(response, this.name);
 
     const html = await response.text();
-    if (CAPTCHA_RE.test(response.url ?? "") || CAPTCHA_RE.test(html)) {
-      throw this._blocked(context, "on the results page");
+    if (isCaptcha(response, html)) {
+      if (allowFallback && this.fallbackOnCaptcha) {
+        const alternate = DOMAINS.find((candidate) => candidate !== domain);
+        if (alternate) {
+          return this._run(query, page, timeFilter, context, searchType, alternate, false);
+        }
+      }
+      throw this._blocked(context, `on ${domain}`);
     }
 
     const $ = cheerio.load(html);
-    if (searchType === "images") return parseImages(html, this.domain, this.name);
-    if (searchType === "videos") return parseVideos($, this.domain, this.name);
-    return parseWeb($, this.domain, this.name);
+    if (searchType === "images") return parseImages(html, domain, this.name);
+    if (searchType === "videos") return parseVideos($, domain, this.name);
+    return parseWeb($, domain, this.name);
   }
 }
