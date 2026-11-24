@@ -26,6 +26,13 @@
       "description": "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images. Adult results are not blocked when safe search is off.",
       "version": "1.1.0",
       "type": "images"
+    },
+    {
+      "path": "engines/yandex-videos",
+      "name": "Yandex Videos",
+      "description": "Yandex video search. No query-level keyword blocks, safe-search level, and unblurred NSFW results when safe search is off.",
+      "version": "1.0.0",
+      "type": "videos"
     }
   ],
   "transports": [],
