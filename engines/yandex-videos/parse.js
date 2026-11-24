@@ -10,11 +10,13 @@ const _durationText = (duration) => {
 };
 
 const _watchUrl = (clip, dup) => {
-  if (clip?.url) return clip.url;
-  if (dup?.player?.videoUrl) return dup.player.videoUrl;
-  if (dup?.host?.href) return dup.host.href;
-  if (dup?.href) return _abs(dup.href);
-  return "";
+  let raw = "";
+  if (clip?.url) raw = clip.url;
+  else if (dup?.player?.videoUrl) raw = dup.player.videoUrl;
+  else if (dup?.host?.href) raw = dup.host.href;
+  else if (dup?.href) raw = _abs(dup.href);
+  if (typeof raw !== "string" || !raw) return "";
+  return raw.startsWith("http://") ? `https://${raw.slice(7)}` : raw;
 };
 
 const _thumbnail = (clip, dup, clips, dups) => {
