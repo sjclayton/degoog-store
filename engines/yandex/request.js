@@ -61,6 +61,20 @@ export const buildHeaders = (context, cookies = "") => ({
   ...(cookies ? { Cookie: cookies } : {}),
 });
 
+const SITE_OPERATOR_RE = /(?:^|\s)site:([^\s/]+)(?=\s|$)/gi;
+
+export const splitSiteQuery = (query) => {
+  const matches = [...query.matchAll(SITE_OPERATOR_RE)];
+  if (matches.length !== 1) return { text: query, site: undefined };
+  const match = matches[0];
+  const site = match[1].replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const text = `${query.slice(0, match.index)} ${query.slice(match.index + match[0].length)}`
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!site || !text) return { text: query, site: undefined };
+  return { text, site };
+};
+
 export const buildUrl = (query, page, timeFilter, opts) => {
   const {
     domain,
@@ -71,10 +85,15 @@ export const buildUrl = (query, page, timeFilter, opts) => {
     contextLang,
   } = opts;
 
+  const { text, site } = legacy
+    ? { text: query, site: undefined }
+    : splitSiteQuery(query);
+
   const params = new URLSearchParams({
-    text: query,
+    text,
     p: String(Math.max(0, (page || 1) - 1)),
   });
+  if (site) params.set("site", site);
 
   const lang = language === "auto" ? contextLang?.split("-")[0] : language;
   if (lang) params.set("lang", lang);

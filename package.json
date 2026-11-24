@@ -10,7 +10,7 @@
       "path": "engines/yandex",
       "name": "Yandex",
       "description": "Yandex web search. Choose yandex.com or ya.ru, a safe-search level, result language and region in the engine settings. Uses the curl transport by default because Yandex blocks Bun's fetch.",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "type": "web"
     },
     {
