@@ -59,7 +59,7 @@ const SETTINGS_SCHEMA = [
     type: "textarea",
     secret: true,
     description:
-      "Paste the Cookie header from a logged-in Yandex browser session. A real session lowers the captcha rate. Keep it private.",
+      "Paste the full Cookie header from yandex.com or ya.ru in your browser (signed in or not). A real browser session lowers the captcha rate. Keep it private.",
   },
   {
     key: "fallbackOnCaptcha",
@@ -137,6 +137,28 @@ const parseWeb = ($, domain, name) => {
       snippet,
       source: name,
       displayUrl: item.find(".Path-Item").first().text().trim() || undefined,
+    });
+  });
+  return results;
+};
+
+const parseLegacyWeb = ($, domain, name) => {
+  const results = [];
+  $("li.b-serp-item").each((_, el) => {
+    const item = $(el);
+    if (item.find(".b-direct, .ad").length > 0) return;
+    const link = item.find("a.b-serp-item__title-link").first();
+    const title = cleanText(link.text());
+    const url = absolute(link.attr("href"), domain);
+    if (!title || !url || isYandexUrl(url)) return;
+    const snippet =
+      cleanText(item.find(".b-serp-item__text").first().html() ?? "") || undefined;
+    results.push({
+      title,
+      url,
+      snippet,
+      source: name,
+      displayUrl: item.find(".b-serp-url").first().text().trim() || undefined,
     });
   });
   return results;
@@ -258,7 +280,7 @@ export default class YandexEngine {
     this.fallbackOnCaptcha = settings?.fallbackOnCaptcha !== "false";
   }
 
-  buildUrl(query, page, timeFilter, context, searchType, domain = this.domain) {
+  buildUrl(query, page, timeFilter, context, searchType, domain = this.domain, legacy = false) {
     const params = new URLSearchParams({
       text: query,
       p: String(Math.max(0, (page || 1) - 1)),
@@ -270,27 +292,59 @@ export default class YandexEngine {
     if (this.safeSearch === "strict") params.set("family", "yes");
     if (this.safeSearch === "off") params.set("adult", "1");
 
-    return `https://${domain}${PATHS[searchType]}?${params.toString()}`;
+    if (legacy) {
+      params.set("tmpl_version", "releases");
+      params.set("web", "1");
+      params.set("frame", "1");
+      params.set("searchid", "3131712");
+    }
+    const path = legacy && searchType === "web" ? "/search/site/" : PATHS[searchType];
+    return `https://${domain}${path}?${params.toString()}`;
   }
 
   _blocked(context, where) {
     const message = `${NAME} asked for a captcha ${where}`;
-    return (
+    const error =
       context?.engineError?.("captcha", message, { engine: NAME }) ??
-      new Error(message)
-    );
+      new Error(message);
+    return Object.assign(error, { __yandexCaptcha: true });
   }
 
   async executeSearch(query, page = 1, timeFilter, context) {
     const requested = context?.searchType;
     const searchType = Object.hasOwn(PATHS, requested) ? requested : "web";
-    return this._run(query, page, timeFilter, context, searchType, this.domain, true);
+    const alternate = DOMAINS.find((candidate) => candidate !== this.domain);
+    const attempts = [{ domain: this.domain, legacy: false }];
+    if (searchType === "web") attempts.push({ domain: this.domain, legacy: true });
+    if (this.fallbackOnCaptcha && alternate) {
+      attempts.push({ domain: alternate, legacy: false });
+      if (searchType === "web") {
+        attempts.push({ domain: alternate, legacy: true });
+      }
+    }
+
+    for (const attempt of attempts) {
+      try {
+        return await this._run(
+          query,
+          page,
+          timeFilter,
+          context,
+          searchType,
+          attempt.domain,
+          attempt.legacy,
+        );
+      } catch (error) {
+        if (!error?.__yandexCaptcha) throw error;
+      }
+    }
+    throw this._blocked(context, `on ${this.domain}`);
   }
 
-  async _run(query, page, timeFilter, context, searchType, domain, allowFallback) {
+  async _run(query, page, timeFilter, context, searchType, domain, legacy) {
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
-      this.buildUrl(query, page, timeFilter, context, searchType, domain),
+      this.buildUrl(query, page, timeFilter, context, searchType, domain, legacy),
       {
         headers: {
           "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
@@ -317,18 +371,13 @@ export default class YandexEngine {
 
     const html = await response.text();
     if (isCaptcha(response, html)) {
-      if (allowFallback && this.fallbackOnCaptcha) {
-        const alternate = DOMAINS.find((candidate) => candidate !== domain);
-        if (alternate) {
-          return this._run(query, page, timeFilter, context, searchType, alternate, false);
-        }
-      }
       throw this._blocked(context, `on ${domain}`);
     }
 
     const $ = cheerio.load(html);
     if (searchType === "images") return parseImages(html, domain, this.name);
     if (searchType === "videos") return parseVideos($, domain, this.name);
+    if (legacy) return parseLegacyWeb($, domain, this.name);
     return parseWeb($, domain, this.name);
   }
 }
