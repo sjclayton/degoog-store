@@ -1,7 +1,7 @@
 {
   "name": "sjclayton/degoog-store",
   "description": "sjclayton's custom extensions for degoog",
-  "repo-image": "",
+  "repo-image": "assets/repo-image.svg",
   "author": "sjclayton",
   "license": "MIT",
   "plugins": [],
