@@ -1,63 +1,59 @@
-const _abs = (url) =>
-  typeof url === "string" && url.startsWith("//") ? `https:${url}` : url;
+const _abs = url => (typeof url === 'string' && url.startsWith('//') ? `https:${url}` : url);
 
-const _cleanTitle = (title) =>
-  typeof title === "string" ? title.replace(/\[[^\]]*\]/g, "").trim() : "";
+const _cleanTitle = title => (typeof title === 'string' ? title.replace(/\[[^\]]*\]/g, '').trim() : '');
 
-const _durationText = (duration) => {
-  if (!duration || typeof duration !== "object") return "";
-  return typeof duration.text === "string" ? duration.text : "";
+const _durationText = duration => {
+  if (!duration || typeof duration !== 'object') return '';
+  return typeof duration.text === 'string' ? duration.text : '';
 };
 
 const _watchUrl = (clip, dup) => {
-  let raw = "";
+  let raw = '';
   if (clip?.url) raw = clip.url;
   else if (dup?.player?.videoUrl) raw = dup.player.videoUrl;
   else if (dup?.host?.href) raw = dup.host.href;
   else if (dup?.href) raw = _abs(dup.href);
-  if (typeof raw !== "string" || !raw) return "";
-  return raw.startsWith("http://") ? `https://${raw.slice(7)}` : raw;
+  if (typeof raw !== 'string' || !raw) return '';
+  return raw.startsWith('http://') ? `https://${raw.slice(7)}` : raw;
 };
 
 const _thumbnail = (clip, dup, clips, dups) => {
   const poster = clip?.preview?.posterSrc;
-  if (typeof poster === "string" && poster) return _abs(poster);
+  if (typeof poster === 'string' && poster) return _abs(poster);
   if (dup?.thumbnail) return _abs(dup.thumbnail);
   const parentId = dup?.parentClipId;
-  if (typeof parentId === "string" && parentId && parentId !== dup?.videoId) {
+  if (typeof parentId === 'string' && parentId && parentId !== dup?.videoId) {
     const parentClip = clips?.[parentId];
     const parentPoster = parentClip?.preview?.posterSrc;
-    if (typeof parentPoster === "string" && parentPoster) return _abs(parentPoster);
+    if (typeof parentPoster === 'string' && parentPoster) return _abs(parentPoster);
     const parentDup = dups?.[parentId];
     if (parentDup?.thumbnail) return _abs(parentDup.thumbnail);
   }
-  return "";
+  return '';
 };
 
 const _title = (clip, dup) => {
-  const clean = dup?.cleanTitle || dup?.title || "";
-  const fromClip = typeof clip?.description === "string" ? clip.description : "";
+  const clean = dup?.cleanTitle || dup?.title || '';
+  const fromClip = typeof clip?.description === 'string' ? clip.description : '';
   const title = clean || fromClip;
   return _cleanTitle(title);
 };
 
-const _channel = (dup) => {
+const _channel = dup => {
   const host = dup?.host;
-  if (!host) return "";
-  if (host.secondPart?.type === "CHANNEL") {
+  if (!host) return '';
+  if (host.secondPart?.type === 'CHANNEL') {
     const a11y = host.secondPart.a11yText;
-    if (typeof a11y === "string" && a11y) return a11y.replace(/\.$/, "");
+    if (typeof a11y === 'string' && a11y) return a11y.replace(/\.$/, '');
   }
-  if (typeof host.title === "string") return host.title;
-  return "";
+  if (typeof host.title === 'string') return host.title;
+  return '';
 };
 
-const _source = (dup) => {
+const _source = dup => {
   const host = dup?.host;
-  if (!host) return "";
-  return (
-    host.providerName || host.name || host.sourceHost || host.title || ""
-  );
+  if (!host) return '';
+  return host.providerName || host.name || host.sourceHost || host.title || '';
 };
 
 export const parseResults = (data, name, options = {}) => {
@@ -73,9 +69,9 @@ export const parseResults = (data, name, options = {}) => {
   const seen = new Set();
 
   for (const item of serpItems) {
-    if (item?.type !== "videoSnippet") continue;
+    if (item?.type !== 'videoSnippet') continue;
     const vid = item?.props?.videoId;
-    if (typeof vid !== "string" || !vid) continue;
+    if (typeof vid !== 'string' || !vid) continue;
 
     const clip = clips[vid] ?? {};
     const dup = dups[vid] ?? {};
@@ -96,7 +92,7 @@ export const parseResults = (data, name, options = {}) => {
     out.push({
       title,
       url,
-      snippet: typeof clip.description === "string" ? clip.description : "",
+      snippet: typeof clip.description === 'string' ? clip.description : '',
       source: hostName || name,
       ...(thumbnail ? { thumbnail } : {}),
       ...(duration ? { duration } : {}),

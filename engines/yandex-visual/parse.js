@@ -1,28 +1,28 @@
-import * as cheerio from "cheerio";
-import { Include } from "./request.js";
+import * as cheerio from 'cheerio';
+import { Include } from './request.js';
 
 const _abs = (url, host) => {
-  if (typeof url !== "string" || !url) return "";
-  if (url.startsWith("//")) return `https:${url}`;
-  if (url.startsWith("/")) return `${host}${url}`;
+  if (typeof url !== 'string' || !url) return '';
+  if (url.startsWith('//')) return `https:${url}`;
+  if (url.startsWith('/')) return `${host}${url}`;
   return url;
 };
 
-export const parseCbirId = (text) => {
+export const parseCbirId = text => {
   try {
-    return JSON.parse(text)?.blocks?.[0]?.params?.cbirId ?? "";
+    return JSON.parse(text)?.blocks?.[0]?.params?.cbirId ?? '';
   } catch {
-    return "";
+    return '';
   }
 };
 
-export const initialState = (html) => {
+export const initialState = html => {
   const $ = cheerio.load(html);
   let found = null;
-  $("[data-state]").each((_, el) => {
+  $('[data-state]').each((_, el) => {
     if (found) return;
-    const raw = $(el).attr("data-state") ?? "";
-    if (!raw.includes("cbirSites") && !raw.includes("cbirSimilar")) return;
+    const raw = $(el).attr('data-state') ?? '';
+    if (!raw.includes('cbirSites') && !raw.includes('cbirSimilar')) return;
     try {
       found = JSON.parse(raw).initialState ?? null;
     } catch {}
@@ -32,37 +32,32 @@ export const initialState = (html) => {
 
 const _pages = (state, host) =>
   (state?.cbirSites?.sites ?? [])
-    .filter(
-      (site) => typeof site?.url === "string" && site.url.startsWith("http"),
-    )
-    .map((site) => ({
-      title: site.title || site.domain || "",
+    .filter(site => typeof site?.url === 'string' && site.url.startsWith('http'))
+    .map(site => ({
+      title: site.title || site.domain || '',
       url: site.url,
-      snippet: site.description || "",
-      thumbnail:
-        _abs(site.thumb?.url, host) || _abs(site.originalImage?.url, host),
+      snippet: site.description || '',
+      thumbnail: _abs(site.thumb?.url, host) || _abs(site.originalImage?.url, host),
       imageUrl: _abs(site.originalImage?.url, host) || undefined,
     }));
 
-const _imgUrlOf = (link) => {
+const _imgUrlOf = link => {
   try {
-    return (
-      new URL(link, "https://yandex.com").searchParams.get("img_url") ?? ""
-    );
+    return new URL(link, 'https://yandex.com').searchParams.get('img_url') ?? '';
   } catch {
-    return "";
+    return '';
   }
 };
 
 const _similar = (state, host) =>
   (state?.cbirSimilar?.thumbs ?? [])
-    .filter((thumb) => typeof thumb?.imageUrl === "string")
-    .map((thumb) => {
+    .filter(thumb => typeof thumb?.imageUrl === 'string')
+    .map(thumb => {
       const original = _imgUrlOf(thumb.linkUrl);
       return {
-        title: thumb.title || "",
+        title: thumb.title || '',
         url: original || _abs(thumb.linkUrl, host),
-        snippet: "",
+        snippet: '',
         thumbnail: _abs(thumb.imageUrl, host),
         imageUrl: original || undefined,
       };
@@ -74,7 +69,7 @@ export const parseResults = (state, host, include) => {
     ...(include === Include.Pages ? [] : _similar(state, host)),
   ];
   const seen = new Set();
-  return results.filter((r) => {
+  return results.filter(r => {
     if (!r.thumbnail || !r.url || seen.has(r.url)) return false;
     seen.add(r.url);
     return true;

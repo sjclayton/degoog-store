@@ -1,47 +1,35 @@
-import * as cheerio from "cheerio";
-import { SETTINGS_SCHEMA } from "./settings.js";
-import {
-  buildHeaders,
-  buildUrl,
-  DOMAIN,
-  isCaptcha,
-  SAFE_SEARCH_MODES,
-  splitSiteQuery,
-} from "./request.js";
-import { parseLegacyWeb, parseWeb } from "./parse.js";
+import * as cheerio from 'cheerio';
+import { SETTINGS_SCHEMA } from './settings.js';
+import { buildHeaders, buildUrl, DOMAIN, isCaptcha, SAFE_SEARCH_MODES, splitSiteQuery } from './request.js';
+import { parseLegacyWeb, parseWeb } from './parse.js';
 
-export const type = "web";
-export const description = "Yandex web search.";
-export const site = "https://yandex.com/";
+export const type = 'web';
+export const description = 'Yandex web search.';
+export const site = 'https://yandex.com/';
 
-const NAME = "Yandex";
+const NAME = 'Yandex';
 const CAPTCHA_RETRY_DELAY_MS = 1500;
 
 export default class YandexEngine {
   isClientExposed = false;
   name = NAME;
-  bangShortcut = "yan";
-  safeSearch = "moderate";
-  cookies = "";
+  bangShortcut = 'yan';
+  safeSearch = 'moderate';
+  cookies = '';
   settingsSchema = SETTINGS_SCHEMA;
 
   configure(settings) {
     if (SAFE_SEARCH_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
-    if (
-      typeof settings?.cookies === "string" &&
-      settings.cookies !== "__SET__"
-    ) {
+    if (typeof settings?.cookies === 'string' && settings.cookies !== '__SET__') {
       this.cookies = settings.cookies.trim();
     }
   }
 
   _blocked(context, where) {
     const message = `${NAME} asked for a captcha ${where}`;
-    const error =
-      context?.engineError?.("captcha", message, { engine: NAME }) ??
-      new Error(message);
+    const error = context?.engineError?.('captcha', message, { engine: NAME }) ?? new Error(message);
     return Object.assign(error, { __yandexCaptcha: true });
   }
 
@@ -56,22 +44,14 @@ export default class YandexEngine {
     for (const attempt of attempts) {
       for (let tryIndex = 0; tryIndex < attempt.tries; tryIndex++) {
         try {
-          const results = await this._run(
-            query,
-            page,
-            timeFilter,
-            context,
-            attempt,
-          );
+          const results = await this._run(query, page, timeFilter, context, attempt);
           if (results.length > 0) return results;
           empty = results;
           break;
         } catch (error) {
           if (!error?.__yandexCaptcha) throw error;
           if (tryIndex + 1 < attempt.tries) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, CAPTCHA_RETRY_DELAY_MS),
-            );
+            await new Promise(resolve => setTimeout(resolve, CAPTCHA_RETRY_DELAY_MS));
           }
         }
       }
@@ -89,7 +69,7 @@ export default class YandexEngine {
       }),
       {
         headers: buildHeaders(context, this.cookies),
-        redirect: "follow",
+        redirect: 'follow',
       },
     );
     context?.sentinel?.(response, this.name);
@@ -100,8 +80,6 @@ export default class YandexEngine {
     }
 
     const $ = cheerio.load(html);
-    return opts.legacy
-      ? parseLegacyWeb($, DOMAIN, this.name)
-      : parseWeb($, DOMAIN, this.name);
+    return opts.legacy ? parseLegacyWeb($, DOMAIN, this.name) : parseWeb($, DOMAIN, this.name);
   }
 }
