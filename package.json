@@ -11,28 +11,28 @@
       "path": "engines/yandex",
       "name": "Yandex",
       "description": "Yandex web search on yandex.com. Safe-search level and optional cookies in the engine settings. Uses the curl transport by default because Yandex blocks Bun's fetch.",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "type": "web"
     },
     {
       "path": "engines/yandex-images",
       "name": "Yandex Images",
       "description": "Yandex image search. No query-level keyword blocks, safe-search level with unblurred thumbnails when off, size, type and layout filters.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "type": "images"
     },
     {
       "path": "engines/yandex-visual",
       "name": "Yandex Visual Search",
       "description": "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images. Adult results are not blocked when safe search is off.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "type": "images"
     },
     {
       "path": "engines/yandex-videos",
       "name": "Yandex Videos",
       "description": "Yandex video search. No query-level keyword blocks, safe-search level, and unblurred NSFW results when safe search is off.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "type": "videos"
     }
   ],
