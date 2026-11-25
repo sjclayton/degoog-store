@@ -23,7 +23,7 @@ returns nothing, Images and Videos do the same.
 1. Add this repository in degoog's store settings:
    `https://github.com/sjclayton/degoog-store.git`
 2. Open the repo in the store and install the engines you want.
-3. Enable them under Settings, then Engines.
+3. Enable them under Settings > Engines.
 
 ## Transports
 
@@ -115,7 +115,7 @@ nothing.
 ## Privacy
 
 Visual Search uploads every image to Yandex, a third party, along with any
-words typed next to it. Yandex sees this server's IP address, not the visitor's,
+words typed next to it. Yandex sees the degoog server IP address, not the visitor's,
 and keeps the image under its own terms. The engine shows this warning in its
 settings. Do not enable it if that trade is not acceptable.
 
@@ -131,7 +131,7 @@ helps.
 
 ### Engine timeout
 
-Raise the engine timeout. The web engine behind Camoufox needs 45000 ms. The
+Raise the engine timeout. The web engine running behind Camoufox needs 45000 ms. The
 others usually fit within ten seconds.
 
 ### The engine says it changed its results page
@@ -141,7 +141,7 @@ Yandex changed its markup or JSON shape. Ensure the extension is up-to-date.
 ### A `site:` query returns off-site hits
 
 Yandex occasionally ignores the operator, and degoog's built-in indexer can
-replay those rows on later searches for the same query. Clear the indexer or
+replay those rows on later searches for the same query. Clear the indexer and
 turn off the Degoog engine (if enabled), then run the search again. A less thin query helps
 too.
 
