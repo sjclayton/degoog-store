@@ -6,6 +6,7 @@ import {
   DOMAIN,
   isCaptcha,
   SAFE_SEARCH_MODES,
+  splitSiteQuery,
 } from "./request.js";
 import { parseLegacyWeb, parseWeb } from "./parse.js";
 
@@ -14,6 +15,7 @@ export const description = "Yandex web search.";
 export const site = "https://yandex.com/";
 
 const NAME = "Yandex";
+const CAPTCHA_RETRY_DELAY_MS = 1500;
 
 export default class YandexEngine {
   isClientExposed = false;
@@ -41,23 +43,36 @@ export default class YandexEngine {
   }
 
   async executeSearch(query, page = 1, timeFilter, context) {
-    for (const legacy of [false, true]) {
-      try {
-        return await this._run(query, page, timeFilter, context, legacy);
-      } catch (error) {
-        if (!error?.__yandexCaptcha) throw error;
+    const hasSite = Boolean(splitSiteQuery(query).site);
+    const attempts = [
+      { legacy: false, siteParam: false, tries: 2 },
+      ...(hasSite ? [{ legacy: false, siteParam: true, tries: 1 }] : []),
+      { legacy: true, siteParam: false, tries: 1 },
+    ];
+    let empty = null;
+    for (const attempt of attempts) {
+      for (let tryIndex = 0; tryIndex < attempt.tries; tryIndex++) {
+        try {
+          const results = await this._run(query, page, timeFilter, context, attempt);
+          if (results.length > 0) return results;
+          empty = results;
+          break;
+        } catch (error) {
+          if (!error?.__yandexCaptcha) throw error;
+          if (tryIndex + 1 < attempt.tries) {
+            await new Promise((resolve) => setTimeout(resolve, CAPTCHA_RETRY_DELAY_MS));
+          }
+        }
       }
     }
+    if (empty) return empty;
     throw this._blocked(context, `on ${DOMAIN}`);
   }
 
-  async _run(query, page, timeFilter, context, legacy) {
+  async _run(query, page, timeFilter, context, opts) {
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
-      buildUrl(query, page, timeFilter, {
-        legacy,
-        safeSearch: this.safeSearch,
-      }),
+      buildUrl(query, page, timeFilter, { ...opts, safeSearch: this.safeSearch }),
       {
         headers: buildHeaders(context, this.cookies),
         redirect: "follow",
@@ -71,7 +86,7 @@ export default class YandexEngine {
     }
 
     const $ = cheerio.load(html);
-    return legacy
+    return opts.legacy
       ? parseLegacyWeb($, DOMAIN, this.name)
       : parseWeb($, DOMAIN, this.name);
   }

@@ -53,11 +53,10 @@ export const splitSiteQuery = (query) => {
 };
 
 export const buildUrl = (query, page, timeFilter, opts) => {
-  const { legacy = false, safeSearch = "moderate" } = opts;
+  const { legacy = false, safeSearch = "moderate", siteParam = false } = opts;
 
-  const { text, site } = legacy
-    ? { text: query, site: undefined }
-    : splitSiteQuery(query);
+  const { text, site } =
+    !legacy && siteParam ? splitSiteQuery(query) : { text: query, site: undefined };
 
   const params = new URLSearchParams({
     text,

@@ -90,6 +90,12 @@ const deriveFromRedditUrl = (url) => {
   const hasR = segments[0]?.toLowerCase() === "r";
   const sub = hasR ? segments[1] : undefined;
   const isPost = hasR && segments[2]?.toLowerCase() === "comments";
+  if (!hasR && segments[0]?.toLowerCase() === "domain" && segments[1]) {
+    return {
+      title: `Reddit links to ${segments[1]}`,
+      description: `Reddit posts linking to ${segments[1]}.`,
+    };
+  }
   if (!sub) return null;
   if (isPost) {
     const prettySlug = segments[4] ? prettifySlug(segments[4]) : "";
@@ -102,6 +108,24 @@ const deriveFromRedditUrl = (url) => {
     title: `r/${sub}`,
     description: `Reddit community for r/${sub}.`,
   };
+};
+
+const prettifyReddit = (result) => {
+  const placeholderTitle = PLACEHOLDER_TITLE_RE.test(result.title ?? "");
+  const placeholderSnippet = PLACEHOLDER_SNIPPET_RE.test(result.snippet ?? "");
+  if ((placeholderTitle || placeholderSnippet) && isRedditUrl(result.url)) {
+    const derived = deriveFromRedditUrl(result.url);
+    if (derived) {
+      if (placeholderTitle && derived.title) result.title = derived.title;
+      if ((!result.snippet || placeholderSnippet) && derived.description) {
+        result.snippet = derived.description;
+      }
+    }
+    if (result.snippet && PLACEHOLDER_SNIPPET_RE.test(result.snippet)) {
+      result.snippet = undefined;
+    }
+  }
+  return result;
 };
 
 const buildResult = ($, el, domain, name) => {
@@ -126,28 +150,13 @@ const buildResult = ($, el, domain, name) => {
         .html() ?? "",
     ) || undefined;
 
-  const placeholderTitle = PLACEHOLDER_TITLE_RE.test(title);
-  const placeholderSnippet = PLACEHOLDER_SNIPPET_RE.test(snippet ?? "");
-  if ((placeholderTitle || placeholderSnippet) && isRedditUrl(url)) {
-    const derived = deriveFromRedditUrl(url);
-    if (derived) {
-      if (placeholderTitle && derived.title) {
-        title = derived.title;
-      }
-      if ((!snippet || placeholderSnippet) && derived.description) {
-        snippet = derived.description;
-      }
-    }
-    if (snippet && PLACEHOLDER_SNIPPET_RE.test(snippet)) snippet = undefined;
-  }
-
-  return {
+  return prettifyReddit({
     title,
     url,
     snippet,
     source: name,
     displayUrl: item.find(".Path-Item").first().text().trim() || undefined,
-  };
+  });
 };
 
 export const parseWeb = ($, domain, name) => {
@@ -173,13 +182,15 @@ export const parseLegacyWeb = ($, domain, name) => {
     if (!title || !url || isYandexUrl(url)) return;
     const snippet =
       cleanText(item.find(".b-serp-item__text").first().html() ?? "") || undefined;
-    results.push({
-      title,
-      url,
-      snippet,
-      source: name,
-      displayUrl: item.find(".b-serp-url").first().text().trim() || undefined,
-    });
+    results.push(
+      prettifyReddit({
+        title,
+        url,
+        snippet,
+        source: name,
+        displayUrl: item.find(".b-serp-url").first().text().trim() || undefined,
+      }),
+    );
   });
   return results;
 };
