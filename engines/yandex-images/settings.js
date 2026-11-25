@@ -15,7 +15,7 @@ export const SETTINGS_SCHEMA = [
     options: ["off", "moderate", "strict"],
     default: "moderate",
     description:
-      "Off sends Yandex the adult flag and serves unblurred thumbnails, Moderate keeps Yandex's blur on adult tiles, Strict uses Yandex family mode.",
+      "Off sends Yandex the adult flag and serves unblurred thumbnails, Moderate keeps Yandex's defaults, Strict uses Yandex family mode.",
   },
   {
     key: "cookies",

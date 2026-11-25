@@ -1,6 +1,6 @@
 # sjclayton's degoog extensions
 
-Four Yandex engines for degoog. They exist because Yandex answers searches the
+Four Yandex engines for degoog. They exist because Yandex answers searches that
 other engines refuse. Bing, DuckDuckGo and Brave drop many NSFW or niche
 queries and return an empty page. Yandex returns images, videos or pages for
 the same words. Treat these engines as a second opinion, not a replacement for
@@ -8,12 +8,12 @@ your main engines.
 
 ## What's in the repo
 
-| Engine               | Version | Type   | What it does                                                                                                                                          |
-| -------------------- | ------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Yandex               | 1.5.2   | web    | Web search on yandex.com. Understands a single `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
-| Yandex Images        | 1.2.1   | images | Image search with size, type and layout filters.                                                                                                      |
-| Yandex Videos        | 1.2.1   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                                   |
-| Yandex Visual Search | 1.2.1   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                              |
+| Engine               | Version | Type   | What it does                                                                                                                                     |
+| -------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Yandex               | 1.5.3   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
+| Yandex Images        | 1.2.2   | images | Image search with size, type and layout filters. j                                                                                               |
+| Yandex Videos        | 1.2.2   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
+| Yandex Visual Search | 1.2.2   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
 
 The web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -35,8 +35,7 @@ often than curl, so the web engine does best behind
 the official transport that drives a stealth Firefox build.
 
 Install the Camoufox transport from the official extensions repo, run its
-service, and point the transport at it. The transport's README has the Docker
-compose file, the Dockerfile and the small Python server.
+service, and point the transport at it.
 
 Settings for the Yandex web engine:
 

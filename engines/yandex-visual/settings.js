@@ -24,7 +24,7 @@ export const SETTINGS_SCHEMA = [
     options: SAFE_MODES,
     default: "moderate",
     description:
-      "Off does not restrict adult results. Moderate keeps Yandex's defaults. Strict uses Yandex family mode.",
+      "Off does not restrict NSFW results. Moderate keeps Yandex's defaults. Strict uses Yandex family mode.",
   },
   {
     key: "include",
