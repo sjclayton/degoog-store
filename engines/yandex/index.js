@@ -20,7 +20,7 @@ const CAPTCHA_RETRY_DELAY_MS = 1500;
 export default class YandexEngine {
   isClientExposed = false;
   name = NAME;
-  bangShortcut = "y";
+  bangShortcut = "yan";
   safeSearch = "moderate";
   cookies = "";
   settingsSchema = SETTINGS_SCHEMA;
@@ -29,7 +29,10 @@ export default class YandexEngine {
     if (SAFE_SEARCH_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
-    if (typeof settings?.cookies === "string" && settings.cookies !== "__SET__") {
+    if (
+      typeof settings?.cookies === "string" &&
+      settings.cookies !== "__SET__"
+    ) {
       this.cookies = settings.cookies.trim();
     }
   }
@@ -53,14 +56,22 @@ export default class YandexEngine {
     for (const attempt of attempts) {
       for (let tryIndex = 0; tryIndex < attempt.tries; tryIndex++) {
         try {
-          const results = await this._run(query, page, timeFilter, context, attempt);
+          const results = await this._run(
+            query,
+            page,
+            timeFilter,
+            context,
+            attempt,
+          );
           if (results.length > 0) return results;
           empty = results;
           break;
         } catch (error) {
           if (!error?.__yandexCaptcha) throw error;
           if (tryIndex + 1 < attempt.tries) {
-            await new Promise((resolve) => setTimeout(resolve, CAPTCHA_RETRY_DELAY_MS));
+            await new Promise((resolve) =>
+              setTimeout(resolve, CAPTCHA_RETRY_DELAY_MS),
+            );
           }
         }
       }
@@ -72,7 +83,10 @@ export default class YandexEngine {
   async _run(query, page, timeFilter, context, opts) {
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
-      buildUrl(query, page, timeFilter, { ...opts, safeSearch: this.safeSearch }),
+      buildUrl(query, page, timeFilter, {
+        ...opts,
+        safeSearch: this.safeSearch,
+      }),
       {
         headers: buildHeaders(context, this.cookies),
         redirect: "follow",

@@ -11,7 +11,7 @@
       "path": "engines/yandex",
       "name": "Yandex",
       "description": "Yandex web search on yandex.com. Safe-search level and optional cookies in the engine settings. Uses the curl transport by default because Yandex blocks Bun's fetch.",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "type": "web"
     },
     {
