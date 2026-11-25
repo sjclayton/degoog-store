@@ -1,7 +1,7 @@
 export const FALLBACK_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
-export const DOMAINS = ["yandex.com", "ya.ru"];
+export const DOMAIN = "yandex.com";
 export const SAFE_MODES = ["off", "moderate", "strict"];
 
 export const CAPTCHA_RE = /showcaptcha|smartcaptcha|[?&]captcha=/i;
@@ -32,7 +32,7 @@ const SIZE_MAP = { small: "small", medium: "medium", large: "large" };
 const TYPE_MAP = { photo: "photo", clipart: "lineart" };
 const LAYOUT_MAP = { square: "square", wide: "horizontal", tall: "vertical" };
 
-export const buildSearchUrl = (query, page, safe, domain, imageFilter, legacy = false) => {
+export const buildSearchUrl = (query, page, safe, imageFilter, legacy = false) => {
   const params = new URLSearchParams({
     text: query,
     rpt: "image",
@@ -47,10 +47,10 @@ export const buildSearchUrl = (query, page, safe, domain, imageFilter, legacy = 
   if (f.type && TYPE_MAP[f.type]) params.set("type", TYPE_MAP[f.type]);
   if (f.layout && LAYOUT_MAP[f.layout]) params.set("iorient", LAYOUT_MAP[f.layout]);
 
-  return `https://${domain}/images/search?${params}`;
+  return `https://${DOMAIN}/images/search?${params}`;
 };
 
-export const buildHeaders = (domain, context, extra = {}) => ({
+export const buildHeaders = (context, extra = {}) => ({
   "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
   Accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",

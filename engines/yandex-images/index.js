@@ -2,7 +2,7 @@ import { SETTINGS_SCHEMA } from "./settings.js";
 import {
   buildHeaders,
   buildSearchUrl,
-  DOMAINS,
+  DOMAIN,
   isCaptcha,
   resolveSafe,
   SAFE_MODES,
@@ -26,20 +26,16 @@ export default class YandexImagesEngine {
   name = "Yandex Images";
   bangShortcut = "yi";
   safeSearch = "moderate";
-  domain = DOMAINS[0];
   cookies = "";
-  fallbackOnCaptcha = true;
   settingsSchema = SETTINGS_SCHEMA;
 
   configure(settings) {
-    if (DOMAINS.includes(settings?.domain)) this.domain = settings.domain;
     if (SAFE_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
     if (typeof settings?.cookies === "string" && settings.cookies !== "__SET__") {
       this.cookies = settings.cookies.trim();
     }
-    this.fallbackOnCaptcha = settings?.fallbackOnCaptcha !== "false";
   }
 
   _blocked(context, where) {
@@ -51,41 +47,23 @@ export default class YandexImagesEngine {
   }
 
   async executeSearch(query, page = 1, timeFilter, context) {
-    const alternate = DOMAINS.find((candidate) => candidate !== this.domain);
-    const attempts = [
-      { domain: this.domain, legacy: false },
-      { domain: this.domain, legacy: true },
-    ];
-    if (this.fallbackOnCaptcha && alternate) {
-      attempts.push({ domain: alternate, legacy: false });
-      attempts.push({ domain: alternate, legacy: true });
-    }
-
-    for (const attempt of attempts) {
+    for (const legacy of [false, true]) {
       try {
-        return await this._run(
-          query,
-          page,
-          timeFilter,
-          context,
-          attempt.domain,
-          attempt.legacy,
-        );
+        return await this._run(query, page, timeFilter, context, legacy);
       } catch (error) {
         if (!error?.__yandexCaptcha) throw error;
       }
     }
-    throw this._blocked(context, `on ${this.domain}`);
+    throw this._blocked(context, `on ${DOMAIN}`);
   }
 
-  async _run(query, page, timeFilter, context, domain, legacy) {
+  async _run(query, page, timeFilter, context, legacy) {
     const safe = resolveSafe(this.safeSearch, context);
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
-      buildSearchUrl(query, page, safe, domain, context?.imageFilter, legacy),
+      buildSearchUrl(query, page, safe, context?.imageFilter, legacy),
       {
         headers: buildHeaders(
-          domain,
           context,
           this.cookies ? { Cookie: this.cookies } : {},
         ),
@@ -95,7 +73,7 @@ export default class YandexImagesEngine {
     context?.sentinel?.(response, this.name);
 
     const html = await response.text();
-    if (isCaptcha(response, html)) throw this._blocked(context, `on ${domain}`);
+    if (isCaptcha(response, html)) throw this._blocked(context, `on ${DOMAIN}`);
 
     const state = initialState(html);
     if (!state) throw new Error(`${this.name} changed its results page`);

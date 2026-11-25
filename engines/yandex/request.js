@@ -1,31 +1,8 @@
 export const FALLBACK_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
-export const DOMAINS = ["yandex.com", "ya.ru"];
+export const DOMAIN = "yandex.com";
 export const SAFE_SEARCH_MODES = ["off", "moderate", "strict"];
-export const LANGUAGES = [
-  "auto",
-  "en",
-  "ru",
-  "be",
-  "fr",
-  "de",
-  "id",
-  "kk",
-  "tt",
-  "tr",
-  "uk",
-];
-export const REGIONS = ["101", "177", "84", "102", "111", "225", "auto"];
-export const REGION_LABELS = [
-  "Germany (Stuttgart) - least Russian in testing",
-  "Germany (Berlin)",
-  "USA",
-  "United Kingdom",
-  "Europe",
-  "Russia",
-  "Auto / no region",
-];
 export const WITHIN = {
   hour: "77",
   day: "77",
@@ -76,14 +53,7 @@ export const splitSiteQuery = (query) => {
 };
 
 export const buildUrl = (query, page, timeFilter, opts) => {
-  const {
-    domain,
-    legacy = false,
-    language = "en",
-    region = "101",
-    safeSearch = "moderate",
-    contextLang,
-  } = opts;
+  const { legacy = false, safeSearch = "moderate" } = opts;
 
   const { text, site } = legacy
     ? { text: query, site: undefined }
@@ -95,9 +65,6 @@ export const buildUrl = (query, page, timeFilter, opts) => {
   });
   if (site) params.set("site", site);
 
-  const lang = language === "auto" ? contextLang?.split("-")[0] : language;
-  if (lang) params.set("lang", lang);
-  if (region !== "auto") params.set("lr", region);
   if (timeFilter && WITHIN[timeFilter]) params.set("within", WITHIN[timeFilter]);
 
   if (safeSearch === "strict") params.set("family", "yes");
@@ -110,5 +77,5 @@ export const buildUrl = (query, page, timeFilter, opts) => {
     params.set("searchid", "3131712");
   }
   const path = legacy ? "/search/site/" : "/search/";
-  return `https://${domain}${path}?${params.toString()}`;
+  return `https://${DOMAIN}${path}?${params.toString()}`;
 };

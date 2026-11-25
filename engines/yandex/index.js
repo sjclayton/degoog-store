@@ -3,10 +3,8 @@ import { SETTINGS_SCHEMA } from "./settings.js";
 import {
   buildHeaders,
   buildUrl,
-  DOMAINS,
+  DOMAIN,
   isCaptcha,
-  LANGUAGES,
-  REGIONS,
   SAFE_SEARCH_MODES,
 } from "./request.js";
 import { parseLegacyWeb, parseWeb } from "./parse.js";
@@ -21,25 +19,17 @@ export default class YandexEngine {
   isClientExposed = false;
   name = NAME;
   bangShortcut = "y";
-  domain = DOMAINS[0];
   safeSearch = "moderate";
-  language = "en";
-  region = "101";
   cookies = "";
-  fallbackOnCaptcha = true;
   settingsSchema = SETTINGS_SCHEMA;
 
   configure(settings) {
-    if (DOMAINS.includes(settings?.domain)) this.domain = settings.domain;
     if (SAFE_SEARCH_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
-    if (LANGUAGES.includes(settings?.language)) this.language = settings.language;
-    if (REGIONS.includes(settings?.region)) this.region = settings.region;
     if (typeof settings?.cookies === "string" && settings.cookies !== "__SET__") {
       this.cookies = settings.cookies.trim();
     }
-    this.fallbackOnCaptcha = settings?.fallbackOnCaptcha !== "false";
   }
 
   _blocked(context, where) {
@@ -51,43 +41,22 @@ export default class YandexEngine {
   }
 
   async executeSearch(query, page = 1, timeFilter, context) {
-    const alternate = DOMAINS.find((candidate) => candidate !== this.domain);
-    const attempts = [{ domain: this.domain, legacy: false }];
-    if (this.fallbackOnCaptcha && alternate) {
-      attempts.push({ domain: alternate, legacy: false });
-    }
-    attempts.push({ domain: this.domain, legacy: true });
-    if (this.fallbackOnCaptcha && alternate) {
-      attempts.push({ domain: alternate, legacy: true });
-    }
-
-    for (const attempt of attempts) {
+    for (const legacy of [false, true]) {
       try {
-        return await this._run(
-          query,
-          page,
-          timeFilter,
-          context,
-          attempt.domain,
-          attempt.legacy,
-        );
+        return await this._run(query, page, timeFilter, context, legacy);
       } catch (error) {
         if (!error?.__yandexCaptcha) throw error;
       }
     }
-    throw this._blocked(context, `on ${this.domain}`);
+    throw this._blocked(context, `on ${DOMAIN}`);
   }
 
-  async _run(query, page, timeFilter, context, domain, legacy) {
+  async _run(query, page, timeFilter, context, legacy) {
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
       buildUrl(query, page, timeFilter, {
-        domain,
         legacy,
-        language: this.language,
-        region: this.region,
         safeSearch: this.safeSearch,
-        contextLang: context?.lang,
       }),
       {
         headers: buildHeaders(context, this.cookies),
@@ -98,10 +67,12 @@ export default class YandexEngine {
 
     const html = await response.text();
     if (isCaptcha(response, html)) {
-      throw this._blocked(context, `on ${domain}`);
+      throw this._blocked(context, `on ${DOMAIN}`);
     }
 
     const $ = cheerio.load(html);
-    return legacy ? parseLegacyWeb($, domain, this.name) : parseWeb($, domain, this.name);
+    return legacy
+      ? parseLegacyWeb($, DOMAIN, this.name)
+      : parseWeb($, DOMAIN, this.name);
   }
 }

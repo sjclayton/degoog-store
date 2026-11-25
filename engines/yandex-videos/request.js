@@ -1,7 +1,7 @@
 export const FALLBACK_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
-export const DOMAINS = ["yandex.com", "ya.ru"];
+export const DOMAIN = "yandex.com";
 export const SAFE_MODES = ["off", "moderate", "strict"];
 
 export const CAPTCHA_RE = /showcaptcha|smartcaptcha|[?&]captcha=/i;
@@ -28,7 +28,7 @@ export const resolveSafe = (engineSafe, context) => {
   return SAFE_MODES.includes(engineSafe) ? engineSafe : "moderate";
 };
 
-export const buildSearchUrl = (query, page, safe, domain, legacy = false) => {
+export const buildSearchUrl = (query, page, safe, legacy = false) => {
   const params = new URLSearchParams({
     text: query,
     p: String(Math.max(0, (page || 1) - 1)),
@@ -37,10 +37,10 @@ export const buildSearchUrl = (query, page, safe, domain, legacy = false) => {
   if (safe === "strict") params.set("family", "yes");
   if (safe === "off") params.set("adult", "1");
   if (legacy) params.set("tmpl_version", "releases");
-  return `https://${domain}/video/search?${params}`;
+  return `https://${DOMAIN}/video/search?${params}`;
 };
 
-export const buildHeaders = (domain, context, extra = {}) => ({
+export const buildHeaders = (context, extra = {}) => ({
   "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
   Accept: "application/json, text/html, */*",
   "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",

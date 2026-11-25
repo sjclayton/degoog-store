@@ -3,7 +3,7 @@ import {
   buildHeaders,
   buildResultsUrl,
   buildUpload,
-  DOMAINS,
+  DOMAIN,
   Include,
   isCaptcha,
   resolveSafe,
@@ -28,14 +28,11 @@ export default class YandexVisualEngine {
   isClientExposed = false;
   name = "Yandex Visual Search";
   safeSearch = "moderate";
-  domain = DOMAINS[0];
   include = Include.Both;
   cookies = "";
-  fallbackOnCaptcha = true;
   settingsSchema = SETTINGS_SCHEMA;
 
   configure(settings) {
-    if (DOMAINS.includes(settings?.domain)) this.domain = settings.domain;
     if (SAFE_MODES.includes(settings?.safeSearch)) {
       this.safeSearch = settings.safeSearch;
     }
@@ -45,7 +42,6 @@ export default class YandexVisualEngine {
     if (typeof settings?.cookies === "string" && settings.cookies !== "__SET__") {
       this.cookies = settings.cookies.trim();
     }
-    this.fallbackOnCaptcha = settings?.fallbackOnCaptcha !== "false";
   }
 
   _blocked(context, where) {
@@ -59,33 +55,14 @@ export default class YandexVisualEngine {
   async executeSearch(query, page = 1, _timeFilter, context) {
     const image = context?.image;
     if (!image || page > 1) return [];
-
-    const alternate = DOMAINS.find((candidate) => candidate !== this.domain);
-    const attempts = [
-      { domain: this.domain, legacy: false },
-      { domain: this.domain, legacy: true },
-    ];
-    if (this.fallbackOnCaptcha && alternate) {
-      attempts.push({ domain: alternate, legacy: false });
-      attempts.push({ domain: alternate, legacy: true });
-    }
-
-    for (const attempt of attempts) {
-      try {
-        return await this._run(query, context, attempt.domain, attempt.legacy);
-      } catch (error) {
-        if (!error?.__yandexCaptcha) throw error;
-      }
-    }
-    throw this._blocked(context, `on ${this.domain}`);
+    return this._run(query, context);
   }
 
-  async _run(query, context, domain, legacy) {
+  async _run(query, context) {
     const safe = resolveSafe(this.safeSearch, context);
     const doFetch = context?.fetch ?? fetch;
-    const host = `https://${domain}`;
+    const host = `https://${DOMAIN}`;
     const headers = buildHeaders(
-      domain,
       context,
       this.cookies ? { Cookie: this.cookies } : {},
     );

@@ -1,7 +1,7 @@
 export const FALLBACK_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
-export const DOMAINS = ["yandex.com", "ya.ru"];
+export const DOMAIN = "yandex.com";
 export const SAFE_MODES = ["off", "moderate", "strict"];
 
 export const Include = Object.freeze({
@@ -44,10 +44,10 @@ export const resolveSafe = (engineSafe, context) => {
   return SAFE_MODES.includes(engineSafe) ? engineSafe : "moderate";
 };
 
-export const buildHeaders = (domain, context, extra = {}) => ({
+export const buildHeaders = (context, extra = {}) => ({
   "User-Agent": context?.userAgent?.() ?? FALLBACK_UA,
   "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
-  Referer: `https://${domain}/images/`,
+  Referer: `https://${DOMAIN}/images/`,
   ...extra,
 });
 
