@@ -3,6 +3,7 @@
   "description": "sjclayton's custom extensions for degoog",
   "repo-image": "",
   "author": "sjclayton",
+  "license": "MIT",
   "plugins": [],
   "themes": [],
   "engines": [
