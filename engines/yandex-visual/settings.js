@@ -2,6 +2,15 @@ import { Include, INCLUDE_LABELS, SAFE_MODES } from "./request.js";
 
 export const SETTINGS_SCHEMA = [
   {
+    key: "outgoingTransport",
+    label: "Outgoing HTTP client transport",
+    type: "select",
+    options: ["curl", "curl-fallback", "fetch"],
+    default: "curl-fallback",
+    description:
+      "curl-fallback tries fetch first and retries with curl when Yandex blocks or rate-limits it.",
+  },
+  {
     key: "privacy",
     label: "Where the image goes",
     type: "info",
