@@ -10,12 +10,12 @@ your main engines.
 
 | Engine               | Version | Type   | What it does                                                                                                                                     |
 | -------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mojeek               | 1.0.0   | web    | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
+| Mojeek               | 1.0.1   | web    | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
 | Reddit               | 1.1.2   | web    | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
 | Yandex               | 1.5.4   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
-| Yandex Images        | 1.2.3   | images | Image search with size, type and layout filters.                                                                                                 |
-| Yandex Videos        | 1.2.3   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
-| Yandex Visual Search | 1.2.3   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
+| Yandex Images        | 1.2.4   | images | Image search with size, type and layout filters.                                                                                                 |
+| Yandex Videos        | 1.2.4   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
+| Yandex Visual Search | 1.2.4   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
