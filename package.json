@@ -10,14 +10,14 @@
     {
       "path": "engines/yandex",
       "name": "Yandex",
-      "description": "Yandex web search on yandex.com. No query level blocks, safe-search level and optional cookies in the engine settings.",
+      "description": "Yandex web search on yandex.com. No query-level keyword blocks, supports safe-search and optional cookies.",
       "version": "1.5.4",
       "type": "web"
     },
     {
       "path": "engines/yandex-images",
       "name": "Yandex Images",
-      "description": "Yandex image search. No query-level keyword blocks, safe-search level with unblurred thumbnails when off, size, type and layout filters.",
+      "description": "Yandex image search. No query-level keyword blocks, supports safe-search with unblurred NSFW results when off, size, type and layout filters.",
       "version": "1.2.3",
       "type": "images"
     },
@@ -31,15 +31,22 @@
     {
       "path": "engines/yandex-videos",
       "name": "Yandex Videos",
-      "description": "Yandex video search. No query-level keyword blocks, safe-search level with unblurred NSFW results when off.",
+      "description": "Yandex video search. No query-level keyword blocks, supports safe-search with unblurred NSFW results when off.",
       "version": "1.2.3",
       "type": "videos"
     },
     {
       "path": "engines/reddit",
       "name": "Reddit",
-      "description": "Reddit post and community search through the old.reddit.com HTML results page. Supports safe-search level, sort order and r/subreddit scoping.",
+      "description": "Reddit post and community search through the old.reddit.com HTML results page. Supports safe-search, sort order and r/subreddit scoping.",
       "version": "1.1.2",
+      "type": "web"
+    },
+    {
+      "path": "engines/mojeek",
+      "name": "Mojeek",
+      "description": "Mojeek web search. Solves the ALTCHA challenge automatically, supports safe-search, time filter and optional cookies.",
+      "version": "1.0.0",
       "type": "web"
     }
   ],

@@ -1,6 +1,6 @@
 # sjclayton's degoog extensions
 
-Four Yandex engines and a Reddit engine for degoog. The Yandex engines exist because Yandex answers
+Four Yandex engines, a Reddit engine and a Mojeek engine for degoog. The Yandex engines exist because Yandex answers
 searches that other engines refuse. Google, Bing, DuckDuckGo and Brave drop many NSFW or niche
 queries and return an empty page. Yandex returns images, videos or pages for
 the same words. Treat these engines as a second opinion, not a replacement for
@@ -10,6 +10,7 @@ your main engines.
 
 | Engine               | Version | Type   | What it does                                                                                                                                     |
 | -------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mojeek               | 1.0.0   | web    | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
 | Reddit               | 1.1.2   | web    | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
 | Yandex               | 1.5.4   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
 | Yandex Images        | 1.2.3   | images | Image search with size, type and layout filters.                                                                                                 |
@@ -18,6 +19,16 @@ your main engines.
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
+
+## Mojeek
+
+Loads the `www.mojeek.com` search page and parses the HTML. Mojeek protects searches with an ALTCHA proof-of-work; the engine solves the challenge, keeps the `chllg` cookie for about 30 days, and retries the search.
+
+Setting safe-search `off` sends `safe=0`, while `moderate` and `strict` send `safe=1`, Mojeek's own filter.
+
+Time filters map to Mojeek's `since` parameter; there is no hourly filter, so `hour` is treated as a day.
+
+Mojeek throttles automated traffic with a `403` "automated queries" page, which the engine reports as a block. Slow down or use Camoufox with a `chllg` cookie.
 
 ## Reddit
 
@@ -86,10 +97,12 @@ timeouts. Plain `curl` also works if `curl-fallback` gives you trouble.
 
 ### Cookies
 
-Cookies are optional for Yandex and required for Reddit. Yandex raises the
+Cookies are optional for Yandex and Mojeek, and required for Reddit. Yandex raises the
 captcha rate for anonymous sessions, and a real browser session lowers it.
 Reddit no longer serves `old.reddit.com` to logged-out visitors, so the Reddit
-engine needs cookies from a signed-in browser.
+engine needs cookies from a signed-in browser. For Mojeek, the engine solves the
+challenge and stores `chllg` itself; paste that cookie only if using the Camoufox
+transport, is it cannot submit the challenge.
 
 The steps are the same in any modern browser (Chrome, Edge, Firefox, Safari,
 and others); only the menu labels differ slightly:
@@ -145,7 +158,7 @@ words typed next to it. Yandex sees the degoog server IP address, not the visito
 and keeps the image under its own terms. The engine shows this warning in its
 settings. Do not enable it if that trade is not acceptable.
 
-The other three Yandex engines send only the query text and your cookies (if set) to Yandex. The Reddit engine sends the query text and your Reddit cookies to Reddit.
+The other three Yandex engines send only the query text and your cookies (if set) to Yandex. The Reddit engine sends the query text and your Reddit cookies to Reddit. The Mojeek engine sends the query text, your cookies (if set) and the ALTCHA solution to Mojeek.
 
 ## Troubleshooting
 
