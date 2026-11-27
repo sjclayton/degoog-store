@@ -6,7 +6,7 @@ export const SETTINGS_SCHEMA = [
     label: 'Outgoing HTTP client transport',
     type: 'select',
     options: ['curl', 'curl-fallback', 'fetch'],
-    default: 'curl-fallback',
+    default: 'curl',
     description: 'Reddit blocks most server IPs and plain HTTP clients. Camoufox gets through far more often.',
   },
   {

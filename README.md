@@ -76,9 +76,9 @@ Settings for the Camoufox transport:
 If the Camoufox service runs on the same machine as degoog, use
 `http://127.0.0.1:53323` instead.
 
-### curl-fallback for the other three
+### curl-fallback for the Yandex media engines
 
-Images, Videos and Visual Search do not need a browser. They default to
+Yandex Images, Videos and Visual Search do not need a browser. They default to
 `curl-fallback`, which tries Bun's `fetch` first and retries with curl on 403,
 429, 502 and 503. Leave it alone unless you have a reason to change it. Leave
 the timeout empty to use the ten second default. Raise it to `20000` if you see
