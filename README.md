@@ -21,7 +21,7 @@ returns nothing, Images and Videos do the same.
 
 ## Reddit
 
-Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their member count and description.
+Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their age and description.
 
 Include `r/name` to search inside one community, for example `r/selfhosted degoog`. A `site:reddit.com` token is dropped because every result is already from Reddit.
 

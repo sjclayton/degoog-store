@@ -120,9 +120,8 @@ const buildCommunityResult = ($, el, domain, name, nsfw) => {
   if (!subreddit) return null;
 
   const title = cleanText(link.text()) || subreddit;
-  const members = cleanText(item.find('.search-subscribers').first().text());
   const age = cleanText(item.find('.search-time').first().text());
-  const meta = [subreddit, members, age].filter(Boolean).join(' · ');
+  const meta = [subreddit, age].filter(Boolean).join(' · ');
   const body = truncate(cleanText(item.find('.search-result-body').first().text()), SNIPPET_MAX);
   const snippet = [meta, body].filter(Boolean).join(' — ');
 
