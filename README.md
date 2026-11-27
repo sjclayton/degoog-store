@@ -99,12 +99,23 @@ captcha rate for anonymous sessions, and a real browser session lowers it.
 Reddit no longer serves `old.reddit.com` to logged-out visitors, so the Reddit
 engine needs cookies from a signed-in browser.
 
-Open yandex.com (or old.reddit.com for the Reddit engine) in your browser, open
-the developer tools, find the document request in the Network tab, and copy the
-whole `Cookie` request header. Paste it into the engine's Cookies field. For
-Reddit, sign in first. `reddit_session` is the cookie that carries the login;
-`token_v2` and the rest are optional but fine to include. You do not need to be
-signed in for Yandex.
+The steps are the same in any modern browser (Chrome, Edge, Firefox, Safari,
+and others); only the menu labels differ slightly:
+
+1. Open yandex.com (or old.reddit.com for the Reddit engine) and sign in for
+   Reddit. You do not need to sign in for Yandex.
+2. Open the browser's developer tools (usually `F12`, or "Inspect" from the
+   right-click menu).
+3. Switch to the Network tab and reload the page.
+4. Select the first document request for the site (the page itself, not an
+   image or script).
+5. In that request's headers, find the `Cookie` request header and copy its
+   whole value.
+6. Paste the value into the engine's Cookies field and save.
+
+For Reddit, `reddit_session` is the cookie that carries the login; `token_v2`
+and the rest are optional but fine to include. Some browsers group request
+headers under a "Request Headers" heading.
 
 The header is stored in `plugin-settings.json` on the degoog host in plain
 text, and Camoufox passes it to the browser context. Treat it like a password.
