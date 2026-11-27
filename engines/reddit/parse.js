@@ -82,8 +82,7 @@ const buildResult = ($, el, domain, name, nsfw) => {
   const threadUrl = commentsUrl ?? (linkUrl && !external ? linkUrl : undefined);
   if (!title || !threadUrl || !isRedditUrl(threadUrl)) return null;
 
-  const subreddit =
-    withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(threadUrl);
+  const subreddit = withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(threadUrl);
   const meta = [
     subreddit,
     withPrefix(item.find('.search-author a.author, a.author').first().text(), 'u/'),
@@ -117,8 +116,7 @@ const buildCommunityResult = ($, el, domain, name, nsfw) => {
   const linkUrl = absolute(link.attr('href'), domain);
   if (!linkUrl || !isRedditUrl(linkUrl) || isUserUrl(linkUrl)) return null;
 
-  const subreddit =
-    withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(linkUrl);
+  const subreddit = withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(linkUrl);
   if (!subreddit) return null;
 
   const title = cleanText(link.text()) || subreddit;

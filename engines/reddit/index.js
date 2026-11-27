@@ -1,6 +1,16 @@
 import * as cheerio from 'cheerio';
 import { SETTINGS_SCHEMA } from './settings.js';
-import { buildCookies, buildHeaders, buildUrl, DOMAIN, isBlocked, MAX_PAGE, resolveSafe, SAFE_MODES, SORT_MODES } from './request.js';
+import {
+  buildCookies,
+  buildHeaders,
+  buildUrl,
+  DOMAIN,
+  isBlocked,
+  MAX_PAGE,
+  resolveSafe,
+  SAFE_MODES,
+  SORT_MODES,
+} from './request.js';
 import { isSearchPage, parseNext, parseWeb } from './parse.js';
 
 export const type = 'web';

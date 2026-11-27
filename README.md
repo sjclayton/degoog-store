@@ -10,30 +10,22 @@ your main engines.
 
 | Engine               | Version | Type   | What it does                                                                                                                                     |
 | -------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Reddit               | 1.1.2   | web    | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
 | Yandex               | 1.5.4   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
 | Yandex Images        | 1.2.3   | images | Image search with size, type and layout filters.                                                                                                 |
 | Yandex Videos        | 1.2.3   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
 | Yandex Visual Search | 1.2.3   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
-| Reddit               | 1.1.1   | web    | Reddit post and community search through the old.reddit.com results page. Requires a signed-in Reddit cookie.                                          |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
 
 ## Reddit
 
-A Reddit web engine. Reddit is hostile to server IPs and plain HTTP clients, and a real Firefox session gets through more often. The engine loads the server-rendered `old.reddit.com` search page and parses the HTML. Camoufox only returns rendered HTML, so the engine avoids Reddit's JSON and RSS endpoints.
+Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their member count and description.
 
-The search page returns both posts and communities. Posts open their discussion thread on `www.reddit.com`, and for link posts the external domain appears in the snippet. Communities show their member count and description and open the subreddit.
+Include `r/name` to search inside one community, for example `r/selfhosted degoog`. A `site:reddit.com` token is dropped because every result is already from Reddit.
 
-Reddit only serves `old.reddit.com` to logged-in accounts now, so the engine needs cookies from a signed-in browser. Paste the whole `Cookie` header; `reddit_session` carries the login and the other cookies are optional. The account must also have used Old Reddit in the last six months unless it moderates a subreddit. Without cookies the login wall comes back and the engine reports that it was blocked.
-
-Safe search follows the same `off`/`moderate`/`strict` rules as the Yandex engines. `off` includes NSFW posts and sends the `over18` cookie. `moderate` and `strict` hide NSFW posts and communities, because Reddit only has an on/off switch. When degoog passes a visitor's safe-search choice to the engine, it wins over the engine setting.
-
-Start a query with or include `r/name` to search inside one community, for example `r/selfhosted camoufox`. A `site:reddit.com` token is dropped because every result is already from Reddit.
-
-Reddit only pages forward, so page 3 loads pages 1 and 2 first unless the engine has already seen them. Pages stop at 5. A `503` error usually means the Camoufox service is down or unreachable.
-
-Transport settings are the same as the Yandex web engine, covered under [Camoufox for web search](#camoufox-for-web-search).
+Reddit only has on/off safe search: `off` includes NSFW posts, while `moderate` and `strict` hide them. The engine pages forward only, so page 3 loads pages 1 and 2 first, and pages stop being returned at 5.
 
 ## Install
 
@@ -56,10 +48,10 @@ service, and point the transport at it.
 
 Settings for the Yandex and Reddit web engines:
 
-| Setting            | Value                                              |
-| ------------------ | -------------------------------------------------- |
-| Outgoing transport | Camoufox                                           |
-| Timeout            | `45000` ms                                         |
+| Setting            | Value                                                         |
+| ------------------ | ------------------------------------------------------------- |
+| Outgoing transport | Camoufox                                                      |
+| Timeout            | `45000` ms                                                    |
 | Cookies            | `Cookie` header from yandex.com or a signed-in old.reddit.com |
 
 The timeout matters for Yandex. On a normal query the engine tries the modern
@@ -72,14 +64,14 @@ earlier pages first.
 
 Settings for the Camoufox transport:
 
-| Setting                            | Value                          | Why                                                                  |
-| ---------------------------------- | ------------------------------ | -------------------------------------------------------------------- |
-| Camoufox URL                       | `http://<camoufox-host>:53323` | Where your service listens.                                          |
+| Setting                            | Value                          | Why                                                                     |
+| ---------------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| Camoufox URL                       | `http://<camoufox-host>:53323` | Where your service listens.                                             |
 | Warm up before request             | on                             | Visits the target site before the real page. Cold sessions get flagged. |
-| Warmup dwell                       | `2500` ms                      | Short enough to stay quick, long enough for the session to register. |
-| Timeout                            | `30000` ms                     | Time for the page itself, separate from the engine timeout.          |
-| Wait until                         | `load`                         | The result page is usable before the network goes idle.         |
-| Bypass proxy for Camoufox endpoint | on                             | Talk to the service directly, not through degoog's proxy.            |
+| Warmup dwell                       | `2500` ms                      | Short enough to stay quick, long enough for the session to register.    |
+| Timeout                            | `30000` ms                     | Time for the page itself, separate from the engine timeout.             |
+| Wait until                         | `load`                         | The result page is usable before the network goes idle.                 |
+| Bypass proxy for Camoufox endpoint | on                             | Talk to the service directly, not through degoog's proxy.               |
 
 If the Camoufox service runs on the same machine as degoog, use
 `http://127.0.0.1:53323` instead.
@@ -179,7 +171,7 @@ replay those rows on later searches for the same query. Clear the indexer and
 turn off the Degoog engine (if enabled), then run the search again. A less thin query helps
 too.
 
-### Reddit shows a login page
+### Reddit queries return a login page
 
 Reddit only serves `old.reddit.com` to logged-in accounts. Add cookies from a
 signed-in browser: `reddit_session` is the one that matters. The account must
