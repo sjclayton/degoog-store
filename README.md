@@ -1,7 +1,7 @@
 # sjclayton's degoog extensions
 
 Four Yandex engines and a Reddit engine for degoog. The Yandex engines exist because Yandex answers
-searches that other engines refuse. Bing, DuckDuckGo and Brave drop many NSFW or niche
+searches that other engines refuse. Google, Bing, DuckDuckGo and Brave drop many NSFW or niche
 queries and return an empty page. Yandex returns images, videos or pages for
 the same words. Treat these engines as a second opinion, not a replacement for
 your main engines.
