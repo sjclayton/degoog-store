@@ -102,7 +102,7 @@ captcha rate for anonymous sessions, and a real browser session lowers it.
 Reddit no longer serves `old.reddit.com` to logged-out visitors, so the Reddit
 engine needs cookies from a signed-in browser. For Mojeek, the engine solves the
 challenge and stores `chllg` itself; paste that cookie only if using the Camoufox
-transport, is it cannot submit the challenge.
+transport, as it cannot submit the challenge.
 
 The steps are the same in any modern browser (Chrome, Edge, Firefox, Safari,
 and others); only the menu labels differ slightly:
