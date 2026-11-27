@@ -19,7 +19,7 @@ export const SETTINGS_SCHEMA = [
   {
     key: 'cookies',
     label: 'Yandex cookies (optional)',
-    type: 'textarea',
+    type: 'password',
     secret: true,
     description:
       'Paste the full Cookie header from yandex.com in your browser (signed in or not). A real browser session lowers the captcha rate. Keep it private.',

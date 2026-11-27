@@ -1,7 +1,7 @@
 # sjclayton's degoog extensions
 
-Four Yandex engines for degoog. They exist because Yandex answers searches that
-other engines refuse. Bing, DuckDuckGo and Brave drop many NSFW or niche
+Four Yandex engines and a Reddit engine for degoog. The Yandex engines exist because Yandex answers
+searches that other engines refuse. Bing, DuckDuckGo and Brave drop many NSFW or niche
 queries and return an empty page. Yandex returns images, videos or pages for
 the same words. Treat these engines as a second opinion, not a replacement for
 your main engines.
@@ -10,13 +10,30 @@ your main engines.
 
 | Engine               | Version | Type   | What it does                                                                                                                                     |
 | -------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Yandex               | 1.5.3   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
-| Yandex Images        | 1.2.2   | images | Image search with size, type and layout filters. j                                                                                               |
-| Yandex Videos        | 1.2.2   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
-| Yandex Visual Search | 1.2.2   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
+| Yandex               | 1.5.4   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
+| Yandex Images        | 1.2.3   | images | Image search with size, type and layout filters.                                                                                                 |
+| Yandex Videos        | 1.2.3   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
+| Yandex Visual Search | 1.2.3   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
+| Reddit               | 1.1.1   | web    | Reddit post and community search through the old.reddit.com results page. Requires a signed-in Reddit cookie.                                          |
 
-The web engine falls back to Yandex's legacy results page when the modern page
+The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
+
+## Reddit
+
+A Reddit web engine. Reddit is hostile to server IPs and plain HTTP clients, and a real Firefox session gets through more often. The engine loads the server-rendered `old.reddit.com` search page and parses the HTML. Camoufox only returns rendered HTML, so the engine avoids Reddit's JSON and RSS endpoints.
+
+The search page returns both posts and communities. Posts open their discussion thread on `www.reddit.com`, and for link posts the external domain appears in the snippet. Communities show their member count and description and open the subreddit.
+
+Reddit only serves `old.reddit.com` to logged-in accounts now, so the engine needs cookies from a signed-in browser. Paste the whole `Cookie` header; `reddit_session` carries the login and the other cookies are optional. The account must also have used Old Reddit in the last six months unless it moderates a subreddit. Without cookies the login wall comes back and the engine reports that it was blocked.
+
+Safe search follows the same `off`/`moderate`/`strict` rules as the Yandex engines. `off` includes NSFW posts and sends the `over18` cookie. `moderate` and `strict` hide NSFW posts and communities, because Reddit only has an on/off switch. When degoog passes a visitor's safe-search choice to the engine, it wins over the engine setting.
+
+Start a query with or include `r/name` to search inside one community, for example `r/selfhosted camoufox`. A `site:reddit.com` token is dropped because every result is already from Reddit.
+
+Reddit only pages forward, so page 3 loads pages 1 and 2 first unless the engine has already seen them. Pages stop at 5. A `503` error usually means the Camoufox service is down or unreachable.
+
+Transport settings are the same as the Yandex web engine, covered under [Camoufox for web search](#camoufox-for-web-search).
 
 ## Install
 
@@ -29,38 +46,39 @@ returns nothing, Images and Videos do the same.
 
 ### Camoufox for web search
 
-Yandex guards its web results hardest. A real Firefox session gets through more
-often than curl, so the web engine does best behind
+Yandex and Reddit guard their web results hardest. A real Firefox session gets
+through more often than curl, so both web engines do best behind
 [Camoufox](https://github.com/degoog-org/official-extensions/tree/main/transports/camoufox),
 the official transport that drives a stealth Firefox build.
 
 Install the Camoufox transport from the official extensions repo, run its
 service, and point the transport at it.
 
-Settings for the Yandex web engine:
+Settings for the Yandex and Reddit web engines:
 
-| Setting            | Value                                |
-| ------------------ | ------------------------------------ |
-| Outgoing transport | Camoufox                             |
-| Timeout            | `45000` ms                           |
-| Cookies            | your `Cookie` header from yandex.com |
+| Setting            | Value                                              |
+| ------------------ | -------------------------------------------------- |
+| Outgoing transport | Camoufox                                           |
+| Timeout            | `45000` ms                                         |
+| Cookies            | `Cookie` header from yandex.com or a signed-in old.reddit.com |
 
-The timeout matters. On a normal query the engine tries the modern page twice,
-waiting 1.5 seconds between captcha retries. A query with `site:` gets one more
-attempt through the `site` parameter, and a final attempt against the legacy
-page. That can run past ten seconds even when everything works. The stock ten
-second timeout cuts it off, 45 seconds leaves room for the browser and the
-retries.
+The timeout matters for Yandex. On a normal query the engine tries the modern
+page twice, waiting 1.5 seconds between captcha retries. A query with `site:`
+gets one more attempt through the `site` parameter, and a final attempt against
+the legacy page. That can run past ten seconds even when everything works. The
+stock ten second timeout cuts it off, 45 seconds leaves room for the browser and
+the retries. Reddit needs the same headroom because each page load fetches the
+earlier pages first.
 
 Settings for the Camoufox transport:
 
 | Setting                            | Value                          | Why                                                                  |
 | ---------------------------------- | ------------------------------ | -------------------------------------------------------------------- |
 | Camoufox URL                       | `http://<camoufox-host>:53323` | Where your service listens.                                          |
-| Warm up before request             | on                             | Visits yandex.com before the real page. Yandex flags cold sessions.  |
+| Warm up before request             | on                             | Visits the target site before the real page. Cold sessions get flagged. |
 | Warmup dwell                       | `2500` ms                      | Short enough to stay quick, long enough for the session to register. |
 | Timeout                            | `30000` ms                     | Time for the page itself, separate from the engine timeout.          |
-| Wait until                         | `load`                         | Yandex's result page is usable before the network goes idle.         |
+| Wait until                         | `load`                         | The result page is usable before the network goes idle.         |
 | Bypass proxy for Camoufox endpoint | on                             | Talk to the service directly, not through degoog's proxy.            |
 
 If the Camoufox service runs on the same machine as degoog, use
@@ -76,20 +94,26 @@ timeouts. Plain `curl` also works if `curl-fallback` gives you trouble.
 
 ### Cookies
 
-Cookies are optional and worth setting. Yandex raises the captcha rate for
-anonymous sessions, and a real browser session lowers it.
+Cookies are optional for Yandex and required for Reddit. Yandex raises the
+captcha rate for anonymous sessions, and a real browser session lowers it.
+Reddit no longer serves `old.reddit.com` to logged-out visitors, so the Reddit
+engine needs cookies from a signed-in browser.
 
-Open yandex.com in your browser, open the developer tools, find the document
-request in the Network tab, and copy the whole `Cookie` request header. Paste
-it into the engine's Cookies field. You do not need to be signed in to Yandex for this.
+Open yandex.com (or old.reddit.com for the Reddit engine) in your browser, open
+the developer tools, find the document request in the Network tab, and copy the
+whole `Cookie` request header. Paste it into the engine's Cookies field. For
+Reddit, sign in first. `reddit_session` is the cookie that carries the login;
+`token_v2` and the rest are optional but fine to include. You do not need to be
+signed in for Yandex.
 
 The header is stored in `plugin-settings.json` on the degoog host in plain
 text, and Camoufox passes it to the browser context. Treat it like a password.
 
 ## Settings that help
 
-The short version: web on Camoufox with cookies and a 45 second timeout, media
-engines on curl-fallback with cookies.
+The short version: web engines on Camoufox with a 45 second timeout and cookies
+(required for Reddit, recommended for Yandex); media engines on curl-fallback
+with cookies.
 
 Safe search is a per-engine choice. `off` sends Yandex the `adult` flag, so
 unfiltered results come back unblurred. `moderate` keeps Yandex's default blur
@@ -99,7 +123,7 @@ For images, videos and visual search, the safe-search setting a visitor picks in
 wins over the engine default. If a visitor asks for `off`, the engine sends the
 adult flag even when its own setting says `moderate`.
 
-A `site:` query works on the web engine when it has one site token and at
+A `site:` query works on the Yandex web engine when it has one site token and at
 least one other word:
 
 ```
@@ -118,24 +142,24 @@ words typed next to it. Yandex sees the degoog server IP address, not the visito
 and keeps the image under its own terms. The engine shows this warning in its
 settings. Do not enable it if that trade is not acceptable.
 
-The other three engines send only the query text and your cookies (if set) to Yandex.
+The other three Yandex engines send only the query text and your cookies (if set) to Yandex. The Reddit engine sends the query text and your Reddit cookies to Reddit.
 
 ## Troubleshooting
 
 ### Yandex asked for a captcha
 
 Yandex blocked the IP or the session, not the engine. Add cookies, wait a
-little, or switch the web engine to Camoufox. Lowering the crawl rate also
+little, or switch the Yandex web engine to Camoufox. Lowering the crawl rate also
 helps.
 
 ### Engine timeout
 
-Raise the engine timeout. The web engine running behind Camoufox needs 45000 ms. The
-others usually fit within ten seconds.
+Raise the engine timeout. The web engines running behind Camoufox need 45000 ms.
+The others usually fit within ten seconds.
 
 ### The engine says it changed its results page
 
-Yandex changed its markup or JSON shape. Ensure the extension is up-to-date.
+The site changed its markup or JSON shape. Ensure the extension is up-to-date.
 
 ### A `site:` query returns off-site hits
 
@@ -143,6 +167,13 @@ Yandex occasionally ignores the operator, and degoog's built-in indexer can
 replay those rows on later searches for the same query. Clear the indexer and
 turn off the Degoog engine (if enabled), then run the search again. A less thin query helps
 too.
+
+### Reddit shows a login page
+
+Reddit only serves `old.reddit.com` to logged-in accounts. Add cookies from a
+signed-in browser: `reddit_session` is the one that matters. The account must
+have used Old Reddit in the last six months unless it moderates a subreddit. The
+engine reports this as a block.
 
 ## License
 
