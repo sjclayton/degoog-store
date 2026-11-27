@@ -18,21 +18,21 @@
       "path": "engines/yandex-images",
       "name": "Yandex Images",
       "description": "Yandex image search. No query-level keyword blocks, supports safe-search with unblurred NSFW results when off, size, type and layout filters.",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "type": "images"
     },
     {
       "path": "engines/yandex-visual",
       "name": "Yandex Visual Search",
       "description": "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images. NSFW results are not blocked when safe search is off.",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "type": "images"
     },
     {
       "path": "engines/yandex-videos",
       "name": "Yandex Videos",
       "description": "Yandex video search. No query-level keyword blocks, supports safe-search with unblurred NSFW results when off.",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "type": "videos"
     },
     {
@@ -46,7 +46,7 @@
       "path": "engines/mojeek",
       "name": "Mojeek",
       "description": "Mojeek web search. Solves the ALTCHA challenge automatically, supports safe-search, time filter and optional cookies.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "type": "web"
     }
   ],

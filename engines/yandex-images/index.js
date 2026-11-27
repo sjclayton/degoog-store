@@ -5,7 +5,7 @@ import { initialState, parseResults } from './parse.js';
 export const type = 'images';
 export const site = 'https://yandex.com/';
 export const description =
-  'Yandex image search. Yandex does not block queries on keywords, so adult searches that Bing, DuckDuckGo and Brave answer with zero results still return images here.';
+  'Yandex image search. Yandex does not block queries on keywords, so NSFW searches that Google, Bing, DuckDuckGo and Brave answer with zero results still return images here.';
 
 export const filters = {
   size: ['small', 'medium', 'large'],

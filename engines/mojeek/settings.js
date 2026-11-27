@@ -17,7 +17,7 @@ export const SETTINGS_SCHEMA = [
     options: SAFE_SEARCH_MODES,
     default: 'moderate',
     description:
-      "Off sends safe=0 and includes adult results. Moderate and Strict send safe=1, which is Mojeek's own filter.",
+      "Off sends safe=0 and includes NSFW results. Moderate and Strict send safe=1, which is Mojeek's own filter.",
   },
   {
     key: 'cookies',

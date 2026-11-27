@@ -5,7 +5,7 @@ import { parseResults } from './parse.js';
 export const type = 'videos';
 export const site = 'https://yandex.com/';
 export const description =
-  'Yandex video search. Yandex does not block queries on keywords, so adult searches that other engines answer with zero results still return videos here.';
+  'Yandex video search. Yandex does not block queries on keywords, so NSFW searches that other engines answer with zero results still return videos here.';
 
 export const filters = {
   nsfw: ['on', 'moderate', 'off'],
