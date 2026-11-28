@@ -9,7 +9,7 @@
       "path": "plugins/reddit-community-slot",
       "name": "Reddit Communities",
       "description": "Shows Reddit communities from search results with member count, age and description, sorted by member count or relevance. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "type": "slot"
     }
   ],
@@ -19,42 +19,42 @@
       "path": "engines/yandex",
       "name": "Yandex",
       "description": "Yandex web search on yandex.com. No query-level keyword blocks, supports safe-search and optional cookies. Using the Camoufox transport is recommended.",
-      "version": "1.5.4",
+      "version": "1.5.5",
       "type": "web"
     },
     {
       "path": "engines/yandex-images",
       "name": "Yandex Images",
       "description": "Yandex image search. No query-level keyword blocks, supports safe-search with unblurred NSFW results when off, size, type, layout filters and optional cookies.",
-      "version": "1.2.4",
+      "version": "1.2.5",
       "type": "images"
     },
     {
       "path": "engines/yandex-visual",
       "name": "Yandex Visual Search",
       "description": "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images, NSFW results are not blocked when safe-search is off. Supports optional cookies",
-      "version": "1.2.5",
+      "version": "1.2.6",
       "type": "images"
     },
     {
       "path": "engines/yandex-videos",
       "name": "Yandex Videos",
       "description": "Yandex video search. No query-level keyword blocks, supports safe-search with unblurred NSFW results when off and optional cookies.",
-      "version": "1.2.4",
+      "version": "1.2.5",
       "type": "videos"
     },
     {
       "path": "engines/reddit",
       "name": "Reddit",
       "description": "Reddit post and community search through the old.reddit.com HTML results page. Supports safe-search, sort order, r/subreddit scoping and community member counts. Using the Camoufox transport is recommended.",
-      "version": "1.2.6",
+      "version": "1.2.7",
       "type": "web"
     },
     {
       "path": "engines/mojeek",
       "name": "Mojeek",
       "description": "Mojeek web search. Solves the ALTCHA challenge automatically, supports safe-search, time filter and optional cookies.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "type": "web"
     }
   ],
