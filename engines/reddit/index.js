@@ -23,7 +23,6 @@ const NEXT_CACHE_MAX = 200;
 const COMMUNITY_TTL_MS = 60 * 60 * 1000;
 const COMMUNITY_FAIL_TTL_MS = 10 * 1000;
 const COMMUNITY_CACHE_MAX = 200;
-const COMMUNITY_LOOKUP_MAX = 10;
 const COMMUNITY_BUDGET_MS = 25000;
 const COMMUNITY_CACHE = new Map();
 
@@ -108,7 +107,7 @@ export default class RedditEngine {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(result);
     }
-    const targets = [...groups].slice(0, COMMUNITY_LOOKUP_MAX);
+    const targets = [...groups];
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), COMMUNITY_BUDGET_MS);
     if (context?.signal?.aborted) {
