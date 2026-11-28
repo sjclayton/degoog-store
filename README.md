@@ -17,7 +17,7 @@ not a replacement for your main engines.
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
 | Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
-| Reddit Communities   | Plugin | 1.1.3   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
+| Reddit Communities   | Plugin | 1.1.4   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -48,7 +48,9 @@ A slot plugin that shows the top communities from Reddit results, sorted by memb
 
 The plugin reads counts from its own Reddit results and also from bare `reddit.com/r/...` links returned by other engines. For those, paste the same signed-in Reddit cookie into the plugin's `Reddit cookies` setting; without it Reddit refuses the lookup. Counts are cached briefly.
 
-The plugin requires the Reddit engine. A fresh engine install pulls it in automatically; existing installs need to install the plugin from the store separately. Uninstalling the engine does not remove the plugin, but the plugin shows nothing without Reddit results. Bang searches (`!r ...`) use degoog's command path, which does not request slot panels, so the slot appears on ordinary web searches only.
+The plugin requires the Reddit engine. A fresh engine install pulls it in automatically; existing installs need to install the plugin from the store separately. Uninstalling the engine does not remove the plugin, but the plugin shows nothing without Reddit results.
+
+Degoog does not request slot panels for bang searches. The plugin includes a small client script that handles `!r ...` searches: it reads the command results, asks the slot endpoint for the cards and places them above the results. Ordinary web searches use the normal slot path.
 
 ## Install
 
