@@ -1,6 +1,6 @@
 # Reddit
 
-Reddit post and community search through the old.reddit.com HTML results page. This engine needs cookies from a signed-in Reddit account and does best behind Camoufox.
+Reddit post and community search through Reddit's search JSON. This engine needs cookies from a signed-in Reddit account and does best behind Camoufox.
 
 ## What it does
 
@@ -10,7 +10,7 @@ Include `r/name` to search inside one community, for example `r/selfhosted degoo
 
 Community member counts come from Reddit's `about.json` endpoint and are cached briefly. Turn off `Community member counts` in the engine settings to skip the extra lookups. The Reddit Communities slot plugin can use those counts to show a panel of communities above the results.
 
-Reddit pages forward only: page 3 loads pages 1 and 2 first, and pages stop being returned at 5.
+Pages use Reddit's `after` cursors, so a later page continues from the one before it. Pages stop being returned at 5.
 
 ## Install
 
@@ -20,11 +20,11 @@ Add this repository in degoog's store settings: `https://github.com/sjclayton/de
 
 Use Camoufox with this engine. Reddit blocks most server IPs and plain HTTP clients; a real Firefox session gets through far more often.
 
-| Setting            | Value                                                   | Why                                                      |
-| ------------------ | ------------------------------------------------------- | -------------------------------------------------------- |
-| Outgoing transport | Camoufox                                                | Reddit blocks most server IPs and plain HTTP clients.    |
-| Timeout            | `45000` ms                                              | Each page load fetches the earlier pages first.          |
-| Cookies            | `Cookie` header from any signed-in Reddit session | Reddit only serves old.reddit.com to logged-in accounts. |
+| Setting            | Value                                             | Why                                                     |
+| ------------------ | ------------------------------------------------- | ------------------------------------------------------- |
+| Outgoing transport | Camoufox                                          | Reddit blocks most server IPs and plain HTTP clients.   |
+| Timeout            | `45000` ms                                        | A search loads post and community listings in parallel. |
+| Cookies            | `Cookie` header from any signed-in Reddit session | Reddit blocks unauthenticated search requests.          |
 
 Settings for the Camoufox transport itself:
 
@@ -39,7 +39,7 @@ Settings for the Camoufox transport itself:
 
 If the Camoufox service runs on the same machine as degoog, use `http://127.0.0.1:53323` instead.
 
-The stock ten second timeout cuts off later pages; `45000` leaves room.
+The stock ten second timeout cuts off the two parallel listing requests; `45000` leaves room.
 
 ## Safe search
 
@@ -56,7 +56,7 @@ Cookies are required, and any signed-in Reddit cookie works. The steps are the s
 5. In that request's headers, find the `Cookie` request header and copy its whole value.
 6. Paste the value into the engine's Cookies field and save.
 
-`reddit_session` is the cookie that carries the login; `token_v2` and the rest are optional but fine to include. Some browsers group request headers under a "Request Headers" heading. Reddit has [announced](https://www.reddit.com/r/modnews/comments/1wubgvt/continuing_our_infrastructure_updates_whats/) it will limit Old Reddit to accounts that have used it in the last six months, apart from logged-in moderators, but has not given a rollout date.
+`reddit_session` is the cookie that carries the login; `token_v2` and the rest are optional but fine to include. Some browsers group request headers under a "Request Headers" heading.
 
 The header is stored in `plugin-settings.json` on the degoog host in plain text, and Camoufox passes it to the browser context. Treat it like a password.
 
@@ -66,9 +66,9 @@ The engine sends the query text and your Reddit cookies to Reddit.
 
 ## Troubleshooting
 
-### Reddit queries return a login page
+### Reddit queries return a block page
 
-The engine reports this as a block. Add cookies from a signed-in browser, as described in Cookies above.
+Reddit refuses unauthenticated search requests. The engine reports this as a block; add cookies from a signed-in browser, as described in Cookies above.
 
 ### Engine timeout
 

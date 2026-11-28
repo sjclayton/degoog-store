@@ -12,7 +12,7 @@ not a replacement for your main engines.
 | Extension                                                     | Kind   | Version | Search type | What it does                                                   |
 | ------------------------------------------------------------- | ------ | ------- | ----------- | -------------------------------------------------------------- |
 | [Mojeek](engines/mojeek/README.md)                            | Engine | 1.0.2   | web         | Mojeek web search with automatic ALTCHA solving.               |
-| [Reddit](engines/reddit/README.md)                            | Engine | 1.2.9   | web         | Reddit post and community search through old.reddit.com.       |
+| [Reddit](engines/reddit/README.md)                            | Engine | 1.3.0   | web         | Reddit post and community search through Reddit's search JSON. |
 | [Yandex](engines/yandex/README.md)                            | Engine | 1.5.5   | web         | Web search on yandex.com, including `site:` queries.           |
 | [Yandex Images](engines/yandex-images/README.md)              | Engine | 1.2.5   | images      | Image search with size, type and layout filters.               |
 | [Yandex Videos](engines/yandex-videos/README.md)              | Engine | 1.2.5   | videos      | Video search through Yandex's JSON endpoint.                   |
@@ -84,8 +84,8 @@ timeouts. Plain `curl` also works if `curl-fallback` gives you trouble.
 
 Cookies are optional for Yandex and Mojeek, and required for Reddit. Yandex raises the
 captcha rate for anonymous sessions, and a real browser session lowers it.
-Reddit no longer serves `old.reddit.com` to logged-out visitors, so the Reddit
-engine needs cookies from a signed-in browser. For Mojeek, the engine solves the
+Reddit blocks unauthenticated search requests, so the Reddit engine needs
+cookies from a signed-in browser. For Mojeek, the engine solves the
 challenge and stores `chllg` itself; paste that cookie only if using the Camoufox
 transport, as it cannot submit the challenge.
 

@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import { SETTINGS_SCHEMA } from './settings.js';
 import {
   buildCookies,
@@ -10,12 +9,13 @@ import {
   resolveSafe,
   SAFE_MODES,
   SORT_MODES,
+  withListing,
 } from './request.js';
 import { formatCommunitySnippet, parseAboutJson } from './community.js';
-import { isSearchPage, parseNext, parseWeb } from './parse.js';
+import { parseListing } from './parse.js';
 
 export const type = 'web';
-export const description = 'Reddit post and community search through the old.reddit.com results page.';
+export const description = "Reddit post and community search through Reddit's search JSON results.";
 export const site = 'https://www.reddit.com/';
 
 const NAME = 'Reddit';
@@ -82,7 +82,9 @@ export default class RedditEngine {
           const iconMatch = text.match(/&quot;icon_img&quot;\s*:\s*&quot;([^&]+?)&quot;|"icon_img"\s*:\s*"([^"]+)"/);
           stats = {
             count: Math.floor(count),
-            icon: String(json?.data?.icon_img || json?.data?.community_icon || iconMatch?.[1] || iconMatch?.[2] || '').replace(/&amp;/g, '&'),
+            icon: String(
+              json?.data?.icon_img || json?.data?.community_icon || iconMatch?.[1] || iconMatch?.[2] || '',
+            ).replace(/&amp;/g, '&'),
           };
         }
       }
@@ -116,9 +118,7 @@ export default class RedditEngine {
       context.signal.addEventListener('abort', () => controller.abort(), { once: true });
     }
     try {
-      await Promise.allSettled(
-        targets.map(([key]) => this._communityStats(key, context, safe, controller.signal)),
-      );
+      await Promise.allSettled(targets.map(([key]) => this._communityStats(key, context, safe, controller.signal)));
     } finally {
       clearTimeout(timer);
     }
@@ -141,43 +141,63 @@ export default class RedditEngine {
   async executeSearch(query, page = 1, timeFilter, context) {
     if (page > MAX_PAGE) return [];
     const safe = resolveSafe(this.safeSearch, context);
-    let url = buildUrl(query, timeFilter, { sortBy: this.sortBy, safeSearch: safe });
+    const base = buildUrl(query, timeFilter, { sortBy: this.sortBy, safeSearch: safe });
+    let cursors = { link: '', sr: '' };
     for (let hop = 1; hop < page; hop++) {
-      const next = this._next.get(url) ?? (await this._run(url, safe, context)).next;
-      if (!next) return [];
-      url = next;
+      cursors = this._next.get(base) ?? (await this._run(base, safe, context, cursors)).next;
+      if (!cursors) return [];
     }
-    const { results } = await this._run(url, safe, context);
+    const { results } = await this._run(base, safe, context, cursors);
     return results;
   }
 
-  async _run(url, safe, context) {
+  async _run(base, safe, context, cursors = { link: '', sr: '' }) {
     const doFetch = context?.fetch ?? fetch;
-    const response = await doFetch(url, {
-      headers: buildHeaders(context, buildCookies(this.cookies, safe)),
-      redirect: 'follow',
-    });
-    context?.sentinel?.(response, this.name);
-
-    if (response.status === 404) return { results: [], next: undefined };
-
-    const html = await response.text();
-    if (isBlocked(response, html)) {
-      throw this._blocked(context, `on ${DOMAIN} (HTTP ${response.status})`);
+    const headers = {
+      ...buildHeaders(context, buildCookies(this.cookies, safe)),
+      Accept: 'application/json',
+    };
+    const settled = await Promise.allSettled(
+      ['link', 'sr'].map(async type => {
+        const url = withListing(base, type, cursors[type]);
+        const response = await doFetch(url, { headers, redirect: 'follow' });
+        context?.sentinel?.(response, this.name);
+        if (response.status === 404) return { results: [], after: '' };
+        const text = await response.text();
+        if (isBlocked(response, text)) {
+          throw this._blocked(context, `on ${DOMAIN} (HTTP ${response.status})`);
+        }
+        const json = parseAboutJson(text);
+        if (!Array.isArray(json?.data?.children)) {
+          throw new Error(`${this.name} changed its results page`);
+        }
+        return parseListing(json, { name: this.name, nsfw: safe === 'off' });
+      }),
+    );
+    const listings = settled.map(entry => (entry.status === 'fulfilled' ? entry.value : { results: [], after: '' }));
+    if (listings.every(entry => entry.results.length === 0)) {
+      const failure = settled.find(entry => entry.status === 'rejected');
+      if (failure) throw failure.reason;
     }
 
-    const $ = cheerio.load(html);
-    const results = parseWeb($, DOMAIN, this.name, { nsfw: safe === 'off' });
-    if (results.length === 0 && !isSearchPage($)) throw new Error(`${this.name} changed its results page`);
+    const results = [];
+    const seen = new Set();
+    for (const listing of listings) {
+      for (const result of listing.results) {
+        if (seen.has(result.url)) continue;
+        seen.add(result.url);
+        results.push(result);
+      }
+    }
 
     await this.enrichCommunities(results, context, safe);
 
-    const next = parseNext($, DOMAIN);
-    if (next) {
-      this._next.delete(url);
-      this._next.set(url, next);
+    const next = { link: listings[0]?.after || '', sr: listings[1]?.after || '' };
+    if (next.link || next.sr) {
+      this._next.delete(base);
+      this._next.set(base, next);
       if (this._next.size > NEXT_CACHE_MAX) this._next.delete(this._next.keys().next().value);
     }
-    return { results, next };
+    return { results, next: next.link || next.sr ? next : undefined };
   }
 }

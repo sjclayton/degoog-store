@@ -1,18 +1,6 @@
-import { formatAgeLabel, formatCommunitySnippet } from './community.js';
+import { formatAgeLabel, formatCommunitySnippet, formatMemberCount } from './community.js';
 
 const SNIPPET_MAX = 260;
-const NSFW_SELECTOR = ".nsfw-stamp, .search-result-icon-NSFW, [class*='NSFW']";
-const SEARCH_PAGE_SELECTOR = '#search, form#search, .search-summary, .searchpage, body.search-page';
-
-const absolute = (raw, domain) => {
-  if (typeof raw !== 'string') return undefined;
-  const value = raw.trim();
-  if (!value) return undefined;
-  if (value.startsWith('//')) return `https:${value}`;
-  if (value.startsWith('/')) return `https://${domain}${value}`;
-  if (/^https?:\/\//i.test(value)) return value;
-  return undefined;
-};
 
 const cleanText = value => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '');
 
@@ -20,6 +8,20 @@ const truncate = (value, max) => {
   if (value.length <= max) return value;
   const cut = value.slice(0, max);
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), max - 30)).trimEnd()}…`;
+};
+
+const decoded = value =>
+  cleanText(value)
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+const hostOf = url => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
 };
 
 const isRedditUrl = url => {
@@ -31,138 +33,90 @@ const isRedditUrl = url => {
   }
 };
 
-const hostOf = url => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return '';
+const ageFromUtc = utc => {
+  const value = Number(utc);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  const days = Math.floor((Date.now() - value * 1000) / 86400000);
+  if (days >= 365) return formatAgeLabel(`${Math.floor(days / 365)} year`);
+  if (days >= 30) return formatAgeLabel(`${Math.floor(days / 30)} month`);
+  return formatAgeLabel(`${Math.max(days, 1)} day`);
+};
+
+const agoFromUtc = utc => {
+  const value = Number(utc);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  const seconds = Math.max(0, Math.floor(Date.now() / 1000 - value));
+  if (seconds < 3600)
+    return `${Math.max(1, Math.floor(seconds / 60))} minute${Math.floor(seconds / 60) === 1 ? '' : 's'} ago`;
+  if (seconds < 86400) {
+    const n = Math.floor(seconds / 3600);
+    return `${n} hour${n === 1 ? '' : 's'} ago`;
   }
+  const n = Math.floor(seconds / 86400);
+  return `${n} day${n === 1 ? '' : 's'} ago`;
 };
 
-const withPrefix = (value, prefix) => {
-  const text = cleanText(value);
-  if (!text) return '';
-  return text.toLowerCase().startsWith(prefix) ? text : `${prefix}${text.replace(/^\/?/, '')}`;
-};
-
-const subredditOf = url => {
-  try {
-    const segments = new URL(url).pathname.split('/').filter(Boolean);
-    return segments[0]?.toLowerCase() === 'r' && segments[1] ? `r/${segments[1]}` : '';
-  } catch {
-    return '';
-  }
-};
-
-const isUserUrl = url => {
-  try {
-    const first = new URL(url).pathname.split('/').filter(Boolean)[0]?.toLowerCase();
-    return first === 'user' || first === 'u';
-  } catch {
-    return false;
-  }
-};
-
-const toWww = url => {
-  const parsed = new URL(url);
-  parsed.hostname = 'www.reddit.com';
-  return parsed.toString();
-};
-
-const buildResult = ($, el, domain, name, nsfw) => {
-  const item = $(el);
-
-  const flagged = item.find(NSFW_SELECTOR).length > 0;
+const buildPost = (data, name, nsfw) => {
+  const permalink = cleanText(data.permalink);
+  if (!permalink.startsWith('/r/') || !permalink.includes('/comments/')) return null;
+  const flagged = data.over_18 === true;
   if (flagged && !nsfw) return null;
-
-  const link = item.find('a.search-title').first();
-  const title = cleanText(link.text());
-  const linkUrl = absolute(link.attr('href'), domain);
-  const commentsUrl = absolute(item.find('a.search-comments').first().attr('href'), domain);
-  const external = linkUrl && !isRedditUrl(linkUrl) ? linkUrl : undefined;
-
-  const threadUrl = commentsUrl ?? (linkUrl && !external ? linkUrl : undefined);
-  if (!title || !threadUrl || !isRedditUrl(threadUrl)) return null;
-
-  const subreddit = withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(threadUrl);
-  const time = cleanText(item.find('.search-time time').first().text());
-  const meta = [
-    subreddit,
-    withPrefix(item.find('.search-author a.author, a.author').first().text(), 'u/'),
-    cleanText(item.find('.search-score').first().text()),
-    cleanText(item.find('a.search-comments').first().text()),
-    /community/i.test(time) ? formatAgeLabel(time) : time,
-    flagged ? 'NSFW' : '',
-  ]
+  const title = cleanText(data.title);
+  if (!title) return null;
+  const subreddit = cleanText(data.subreddit) ? `r/${cleanText(data.subreddit)}` : '';
+  const author = cleanText(data.author) && data.author !== '[deleted]' ? `u/${cleanText(data.author)}` : '';
+  const points = formatMemberCount(data.score);
+  const score = points ? `${points.toLowerCase()} points` : '';
+  const comments = Number.isFinite(Number(data.num_comments)) ? `${data.num_comments} comments` : '';
+  const meta = [subreddit, author, score, comments, agoFromUtc(data.created_utc), flagged ? 'NSFW' : '']
     .filter(Boolean)
     .join(' · ');
-
-  const body = truncate(cleanText(item.find('.search-result-body, .search-expando .md').first().text()), SNIPPET_MAX);
+  const body = truncate(cleanText(data.selftext), SNIPPET_MAX);
+  const external = cleanText(data.url) && !isRedditUrl(data.url) ? cleanText(data.url) : '';
   const snippet = [meta, body || (external ? `Link to ${hostOf(external)}` : '')].filter(Boolean).join(' — ');
-
   return {
     title,
-    url: toWww(threadUrl),
+    url: `https://www.reddit.com${permalink}`,
     snippet: snippet || undefined,
     source: name,
     displayUrl: subreddit ? `reddit.com/${subreddit}` : 'reddit.com',
   };
 };
 
-const buildCommunityResult = ($, el, domain, name, nsfw) => {
-  const item = $(el);
-
-  const flagged = item.find(NSFW_SELECTOR).length > 0;
-  if (flagged && !nsfw) return null;
-
-  const link = item.find('header.search-result-header a.search-title, a.search-title').first();
-  const linkUrl = absolute(link.attr('href'), domain);
-  if (!linkUrl || !isRedditUrl(linkUrl) || isUserUrl(linkUrl)) return null;
-
-  const subreddit = withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(linkUrl);
-  if (!subreddit) return null;
-
-  const title = cleanText(link.text()) || subreddit;
-  const age = formatAgeLabel(cleanText(item.find('.search-time').first().text()));
-  const description = truncate(cleanText(item.find('.search-result-body').first().text()), SNIPPET_MAX);
+const buildCommunity = (data, name, nsfw) => {
+  if (data.over18 === true && !nsfw) return null;
+  const display = cleanText(data.display_name);
+  if (!display) return null;
+  const subreddit = `r/${display}`;
+  const description = truncate(cleanText(data.public_description), SNIPPET_MAX);
   const result = {
-    title,
-    url: toWww(linkUrl),
+    title: cleanText(data.display_name_prefixed) || subreddit,
+    url: `https://www.reddit.com/r/${display}/`,
     source: name,
-    displayUrl: subreddit ? `reddit.com/${subreddit}` : 'reddit.com',
-    community: { subreddit, age, description, icon: '' },
+    displayUrl: `reddit.com/${subreddit}`,
+    community: {
+      subreddit,
+      age: ageFromUtc(data.created_utc),
+      description,
+      icon: decoded(data.icon_img || data.community_icon || ''),
+    },
   };
   result.snippet = formatCommunitySnippet(result) || undefined;
   return result;
 };
 
-export const parseWeb = ($, domain, name, options = {}) => {
-  const { nsfw = false } = options;
+export const parseListing = (json, { name, nsfw = false } = {}) => {
+  const children = Array.isArray(json?.data?.children) ? json.data.children : [];
   const results = [];
   const seen = new Set();
-  $('div.search-result-link').each((_, el) => {
-    const result = buildResult($, el, domain, name, nsfw);
-    if (!result || seen.has(result.url)) return;
+  for (const child of children) {
+    const data = child?.data;
+    if (!data) continue;
+    const result =
+      child.kind === 't5' ? buildCommunity(data, name, nsfw) : child.kind === 't3' ? buildPost(data, name, nsfw) : null;
+    if (!result || seen.has(result.url)) continue;
     seen.add(result.url);
     results.push(result);
-  });
-  $('div.search-result-subreddit').each((_, el) => {
-    const result = buildCommunityResult($, el, domain, name, nsfw);
-    if (!result || seen.has(result.url)) return;
-    seen.add(result.url);
-    results.push(result);
-  });
-  return results;
+  }
+  return { results, after: cleanText(json?.data?.after) };
 };
-
-export const parseNext = ($, domain) => {
-  const href = $('span.next-button a, .nav-buttons .next-button a, a[rel~="next"]').first().attr('href');
-  const next = absolute(href, domain);
-  if (!next || !isRedditUrl(next)) return undefined;
-  const parsed = new URL(next);
-  parsed.protocol = 'https:';
-  parsed.hostname = domain;
-  return parsed.toString();
-};
-
-export const isSearchPage = $ => $(SEARCH_PAGE_SELECTOR).length > 0;
