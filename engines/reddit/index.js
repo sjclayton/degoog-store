@@ -24,7 +24,7 @@ const COMMUNITY_TTL_MS = 60 * 60 * 1000;
 const COMMUNITY_FAIL_TTL_MS = 5 * 60 * 1000;
 const COMMUNITY_CACHE_MAX = 200;
 const COMMUNITY_LOOKUP_MAX = 10;
-const COMMUNITY_BUDGET_MS = 2500;
+const COMMUNITY_BUDGET_MS = 9000;
 const COMMUNITY_CACHE = new Map();
 
 export default class RedditEngine {
@@ -71,12 +71,18 @@ export default class RedditEngine {
         signal,
       });
       if (response.ok) {
-        const json = parseAboutJson(await response.text());
-        const count = Number(json?.data?.subscribers);
+        const text = await response.text();
+        const json = parseAboutJson(text);
+        let count = Number(json?.data?.subscribers);
+        if (!Number.isFinite(count) || count <= 0) {
+          const match = text.match(/&quot;subscribers&quot;\s*:\s*(\d+)|"subscribers"\s*:\s*(\d+)/);
+          if (match) count = Number(match[1] || match[2]);
+        }
         if (Number.isFinite(count) && count > 0) {
+          const iconMatch = text.match(/&quot;icon_img&quot;\s*:\s*&quot;([^&]+?)&quot;|"icon_img"\s*:\s*"([^"]+)"/);
           stats = {
             count: Math.floor(count),
-            icon: String(json?.data?.icon_img || json?.data?.community_icon || ''),
+            icon: String(json?.data?.icon_img || json?.data?.community_icon || iconMatch?.[1] || iconMatch?.[2] || ''),
           };
         }
       }

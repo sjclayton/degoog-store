@@ -2,7 +2,7 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_FAIL_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 200;
 const LOOKUP_MAX = 10;
-const CACHE_BUDGET_MS = 2500;
+const CACHE_BUDGET_MS = 9000;
 const COMMUNITY_URL_RE = /^https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([^/?#]+)\/?$/i;
 const statsCache = new Map();
 
