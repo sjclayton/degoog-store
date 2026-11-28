@@ -11,6 +11,7 @@ import {
   SAFE_MODES,
   SORT_MODES,
 } from './request.js';
+import { formatCommunitySnippet } from './community.js';
 import { isSearchPage, parseNext, parseWeb } from './parse.js';
 
 export const type = 'web';
@@ -19,6 +20,11 @@ export const site = 'https://www.reddit.com/';
 
 const NAME = 'Reddit';
 const NEXT_CACHE_MAX = 200;
+const COMMUNITY_TTL_MS = 60 * 60 * 1000;
+const COMMUNITY_FAIL_TTL_MS = 5 * 60 * 1000;
+const COMMUNITY_CACHE_MAX = 200;
+const COMMUNITY_LOOKUP_MAX = 10;
+const COMMUNITY_CACHE = new Map();
 
 export default class RedditEngine {
   isClientExposed = false;
@@ -27,6 +33,7 @@ export default class RedditEngine {
   safeSearch = 'moderate';
   sortBy = 'relevance';
   cookies = '';
+  communityStats = true;
   settingsSchema = SETTINGS_SCHEMA;
   _next = new Map();
 
@@ -39,6 +46,67 @@ export default class RedditEngine {
     }
     if (typeof settings?.cookies === 'string' && settings.cookies !== '__SET__') {
       this.cookies = settings.cookies.trim();
+    }
+    if (typeof settings?.communityStats !== 'undefined') {
+      this.communityStats = settings.communityStats === true || settings.communityStats === 'true';
+    }
+  }
+
+  async _communityStats(subreddit, context, safe) {
+    const name = String(subreddit || '').replace(/^r\//i, '');
+    if (!name) return null;
+    const key = name.toLowerCase();
+    const cached = COMMUNITY_CACHE.get(key);
+    if (cached && cached.expires > Date.now()) return cached.stats;
+    let stats = null;
+    try {
+      const doFetch = context?.fetch ?? fetch;
+      const response = await doFetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`, {
+        headers: {
+          ...buildHeaders(context, buildCookies(this.cookies, safe)),
+          Accept: 'application/json',
+        },
+        redirect: 'follow',
+      });
+      if (response.ok) {
+        const json = await response.json();
+        const count = Number(json?.data?.subscribers);
+        if (Number.isFinite(count) && count > 0) {
+          stats = {
+            count: Math.floor(count),
+            icon: String(json?.data?.icon_img || json?.data?.community_icon || ''),
+          };
+        }
+      }
+    } catch {}
+    COMMUNITY_CACHE.set(key, {
+      stats,
+      expires: Date.now() + (stats ? COMMUNITY_TTL_MS : COMMUNITY_FAIL_TTL_MS),
+    });
+    if (COMMUNITY_CACHE.size > COMMUNITY_CACHE_MAX) {
+      COMMUNITY_CACHE.delete(COMMUNITY_CACHE.keys().next().value);
+    }
+    return stats;
+  }
+
+  async enrichCommunities(results, context, safe) {
+    if (!this.communityStats || !Array.isArray(results)) return;
+    const groups = new Map();
+    for (const result of results) {
+      const subreddit = result?.community?.subreddit;
+      if (!subreddit) continue;
+      const key = String(subreddit).toLowerCase();
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(result);
+    }
+    for (const [key, items] of [...groups].slice(0, COMMUNITY_LOOKUP_MAX)) {
+      const stats = await this._communityStats(key, context, safe);
+      if (!stats) continue;
+      for (const result of items) {
+        result.memberCount = stats.count;
+        result.community.icon = stats.icon;
+        result.snippet = formatCommunitySnippet(result);
+      }
     }
   }
 
@@ -78,6 +146,8 @@ export default class RedditEngine {
     const $ = cheerio.load(html);
     const results = parseWeb($, DOMAIN, this.name, { nsfw: safe === 'off' });
     if (results.length === 0 && !isSearchPage($)) throw new Error(`${this.name} changed its results page`);
+
+    await this.enrichCommunities(results, context, safe);
 
     const next = parseNext($, DOMAIN);
     if (next) {

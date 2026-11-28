@@ -34,4 +34,12 @@ export const SETTINGS_SCHEMA = [
     description:
       'Reddit only serves old.reddit.com to logged-in accounts. Paste the full Cookie header from a signed-in old.reddit.com browser session. reddit_session carries the login; token_v2 and the other cookies are optional. The account must have used Old Reddit in the last six months unless it moderates a subreddit. Keep it private.',
   },
+  {
+    key: 'communityStats',
+    label: 'Community member counts',
+    type: 'toggle',
+    default: 'true',
+    description:
+      'Look up member counts and icons for community results. Adds one short-lived cached request per community; turn off if Reddit rate-limits the instance.',
+  },
 ];

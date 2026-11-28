@@ -1,0 +1,124 @@
+.rd-slot-result {
+  padding: 0;
+  max-width: 100%;
+  width: 100%;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.rd-slot-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.rd-slot-heading {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.rd-slot-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0;
+  min-width: 0;
+}
+
+.rd-slot-grid::-webkit-scrollbar {
+  height: 0.5rem;
+}
+
+.rd-slot-grid::-webkit-scrollbar-track {
+  background: var(--bg-hover);
+  border-radius: 3px;
+}
+
+.rd-slot-grid::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  opacity: 0.4;
+  border-radius: 3px;
+}
+
+.rd-slot-card {
+  display: block;
+  padding: 1rem;
+  background: var(--bg-hover);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 280px;
+  transition: background 0.15s ease;
+}
+
+.results-slot-panel-body a:hover {
+  text-decoration: none;
+}
+
+.rd-slot-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  min-width: 0;
+}
+
+.rd-slot-icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rd-slot-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rd-slot-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary, #ff4500);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-slot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.rd-slot-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

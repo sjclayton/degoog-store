@@ -1,3 +1,5 @@
+import { formatAgeLabel, formatCommunitySnippet } from './community.js';
+
 const SNIPPET_MAX = 260;
 const NSFW_SELECTOR = ".nsfw-stamp, .search-result-icon-NSFW, [class*='NSFW']";
 const SEARCH_PAGE_SELECTOR = '#search, form#search, .search-summary, .searchpage, body.search-page';
@@ -83,12 +85,13 @@ const buildResult = ($, el, domain, name, nsfw) => {
   if (!title || !threadUrl || !isRedditUrl(threadUrl)) return null;
 
   const subreddit = withPrefix(item.find('a.search-subreddit-link').first().text(), 'r/') || subredditOf(threadUrl);
+  const time = cleanText(item.find('.search-time time').first().text());
   const meta = [
     subreddit,
     withPrefix(item.find('.search-author a.author, a.author').first().text(), 'u/'),
     cleanText(item.find('.search-score').first().text()),
     cleanText(item.find('a.search-comments').first().text()),
-    cleanText(item.find('.search-time time').first().text()),
+    /community/i.test(time) ? formatAgeLabel(time) : time,
     flagged ? 'NSFW' : '',
   ]
     .filter(Boolean)
@@ -120,18 +123,17 @@ const buildCommunityResult = ($, el, domain, name, nsfw) => {
   if (!subreddit) return null;
 
   const title = cleanText(link.text()) || subreddit;
-  const age = cleanText(item.find('.search-time').first().text());
-  const meta = [subreddit, age].filter(Boolean).join(' · ');
-  const body = truncate(cleanText(item.find('.search-result-body').first().text()), SNIPPET_MAX);
-  const snippet = [meta, body].filter(Boolean).join(' — ');
-
-  return {
+  const age = formatAgeLabel(cleanText(item.find('.search-time').first().text()));
+  const description = truncate(cleanText(item.find('.search-result-body').first().text()), SNIPPET_MAX);
+  const result = {
     title,
     url: toWww(linkUrl),
-    snippet: snippet || undefined,
     source: name,
     displayUrl: subreddit ? `reddit.com/${subreddit}` : 'reddit.com',
+    community: { subreddit, age, description, icon: '' },
   };
+  result.snippet = formatCommunitySnippet(result) || undefined;
+  return result;
 };
 
 export const parseWeb = ($, domain, name, options = {}) => {

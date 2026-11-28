@@ -1,21 +1,23 @@
 # sjclayton's degoog extensions
 
-Four Yandex engines, a Reddit engine and a Mojeek engine for degoog. The Yandex engines exist because Yandex answers
-searches that other engines refuse. Google, Bing, DuckDuckGo and Brave drop many NSFW or niche
-queries and return an empty page. Yandex returns images, videos or pages for
-the same words. Treat these engines as a second opinion, not a replacement for
-your main engines.
+Four Yandex engines, a Reddit engine, a Reddit Communities slot plugin and a Mojeek engine for degoog.
+
+The Yandex engines exist because Yandex answers searches that other engines refuse.
+Google, Bing, DuckDuckGo and Brave drop many NSFW or niche queries and return an empty page.
+Yandex returns images, videos or pages for the same words. Treat these engines as a second opinion,
+not a replacement for your main engines.
 
 ## What's in the repo
 
-| Engine               | Version | Type   | What it does                                                                                                                                     |
-| -------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mojeek               | 1.0.1   | web    | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
-| Reddit               | 1.1.2   | web    | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
-| Yandex               | 1.5.4   | web    | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
-| Yandex Images        | 1.2.4   | images | Image search with size, type and layout filters.                                                                                                 |
-| Yandex Videos        | 1.2.4   | videos | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
-| Yandex Visual Search | 1.2.4   | images | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
+| Extension            | Kind   | Version | Search type | What it does                                                                                                                                     |
+| -------------------- | ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
+| Reddit               | Engine | 1.2.0   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
+| Yandex               | Engine | 1.5.4   | web         | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
+| Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
+| Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
+| Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
+| Reddit Communities   | Plugin | 1.0.0   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -32,11 +34,19 @@ Mojeek throttles automated traffic with a `403` "automated queries" page, which 
 
 ## Reddit
 
-Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their age and description.
+Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their member count, age and description.
+
+Community counts come from Reddit's `about.json` endpoint and are cached briefly. The paired Reddit Communities slot plugin shows the top communities by members; set `Top communities count` in its settings. Turn off `Community member counts` in the engine settings to skip the extra lookups.
 
 Include `r/name` to search inside one community, for example `r/selfhosted degoog`. A `site:reddit.com` token is dropped because every result is already from Reddit.
 
 Reddit only has on/off safe search: `off` includes NSFW posts, while `moderate` and `strict` hide them. The engine pages forward only, so page 3 loads pages 1 and 2 first, and pages stop being returned at 5.
+
+### Reddit Communities plugin
+
+A slot plugin that shows the top communities from Reddit engine results, sorted by member count. Each card shows the community icon (or a generic Snoo icon), `r/name`, age, member count and description. `Top communities count` sets the limit between 1 and 10.
+
+The plugin requires the Reddit engine. A fresh engine install pulls it in automatically; existing installs need to install the plugin from the store separately. Uninstalling the engine does not remove the plugin, but the plugin shows nothing without Reddit results.
 
 ## Install
 
