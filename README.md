@@ -152,6 +152,10 @@ The site changed its markup or JSON shape. Ensure the extension is up-to-date.
 For provider-specific problems, such as a Reddit login page or a `site:` query
 returning off-site hits, see that extension's README.
 
+## Contributing
+
+Anyone who wishes to contribute is welcome to open an issue or submit a pull request.
+
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT License - see [LICENSE](LICENSE) file for details.
