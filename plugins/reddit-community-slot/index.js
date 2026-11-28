@@ -2,7 +2,7 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_FAIL_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 200;
 const LOOKUP_MAX = 10;
-const CACHE_BUDGET_MS = 9000;
+const CACHE_BUDGET_MS = 5000;
 const COMMUNITY_URL_RE = /^https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([^/?#]+)\/?$/i;
 const statsCache = new Map();
 
@@ -79,6 +79,7 @@ const _fetchStats = async (name, fetchFn, signal) => {
         Accept: 'application/json',
         'User-Agent': 'degoog-reddit-community-slot/1.0',
       },
+      redirect: 'manual',
       signal,
     });
     if (response.ok) {
@@ -108,6 +109,7 @@ export const slot = {
   name: 'Reddit Communities',
   position: 'above-results',
   waitForResults: true,
+  timeoutMs: 20000,
   description:
     "Shows the top Reddit communities by member count from Reddit engine results. Requires sjclayton's Reddit engine to be installed.",
 

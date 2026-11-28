@@ -21,10 +21,10 @@ export const site = 'https://www.reddit.com/';
 const NAME = 'Reddit';
 const NEXT_CACHE_MAX = 200;
 const COMMUNITY_TTL_MS = 60 * 60 * 1000;
-const COMMUNITY_FAIL_TTL_MS = 5 * 60 * 1000;
+const COMMUNITY_FAIL_TTL_MS = 10 * 1000;
 const COMMUNITY_CACHE_MAX = 200;
 const COMMUNITY_LOOKUP_MAX = 10;
-const COMMUNITY_BUDGET_MS = 9000;
+const COMMUNITY_BUDGET_MS = 25000;
 const COMMUNITY_CACHE = new Map();
 
 export default class RedditEngine {
@@ -62,14 +62,15 @@ export default class RedditEngine {
     let stats = null;
     try {
       const doFetch = context?.fetch ?? fetch;
-      const response = await doFetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`, {
-        headers: {
-          ...buildHeaders(context, buildCookies(this.cookies, safe)),
-          Accept: 'application/json',
-        },
-        redirect: 'follow',
-        signal,
-      });
+      const url = `https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`;
+      const headers = {
+        ...buildHeaders(context, buildCookies(this.cookies, safe)),
+        Accept: 'application/json',
+      };
+      let response = await doFetch(url, { headers, redirect: 'manual', signal });
+      if (!response.ok) {
+        response = await doFetch(url, { headers, redirect: 'follow', signal });
+      }
       if (response.ok) {
         const text = await response.text();
         const json = parseAboutJson(text);

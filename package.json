@@ -9,7 +9,7 @@
       "path": "plugins/reddit-community-slot",
       "name": "Reddit Communities",
       "description": "Shows the top Reddit communities by member count from Reddit engine results. Requires sjclayton's Reddit engine from this store.",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "type": "slot"
     }
   ],
@@ -47,7 +47,7 @@
       "path": "engines/reddit",
       "name": "Reddit",
       "description": "Reddit post and community search through the old.reddit.com HTML results page. Supports safe-search, sort order, r/subreddit scoping and community member counts. Using the Camoufox transport is recommended.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "type": "web",
       "dependencies": [
         "https://github.com/sjclayton/degoog-store.git/plugins/reddit-community-slot"
