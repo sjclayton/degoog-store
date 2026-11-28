@@ -92,23 +92,6 @@ const _ageLabel = utc => {
   return `${n} day${n === 1 ? '' : 's'} old`;
 };
 
-const _queryNames = query => {
-  const names = [];
-  const add = value => {
-    const name = String(value || '').replace(/[^A-Za-z0-9_]/g, '');
-    if (name && !names.some(existing => existing.toLowerCase() === name.toLowerCase())) {
-      names.push(name);
-    }
-  };
-  const clean = String(query || '')
-    .trim()
-    .replace(/^!\S+\s*/, '');
-  add(clean.replace(/\s+/g, ''));
-  add(clean.replace(/\s+/g, '_'));
-  for (const word of clean.split(/\s+/)) add(word);
-  return names;
-};
-
 const _searchNames = async (query, fetchFn, signal) => {
   const url = `https://old.reddit.com/subreddits/search?q=${encodeURIComponent(query)}&sort=relevance`;
   const response = await fetchFn(url, {
@@ -271,16 +254,15 @@ export const slot = {
       const cleanQuery = String(query || '')
         .trim()
         .replace(/^!\S+\s*/, '');
-      const names = [];
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), SEARCH_BUDGET_MS);
+      let names = [];
       try {
-        names.push(...(await _searchNames(cleanQuery, fetchFn, controller.signal)));
+        names = await _searchNames(cleanQuery, fetchFn, controller.signal);
       } catch {
       } finally {
         clearTimeout(timer);
       }
-      names.push(..._queryNames(query));
       for (const name of names) {
         const key = name.toLowerCase();
         if (seen.has(key) || candidates.length >= maxCommunities) continue;

@@ -17,7 +17,7 @@ not a replacement for your main engines.
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                       |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                                    |
 | Yandex Visual Search | Engine | 1.2.5   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                               |
-| Reddit Communities   | Plugin | 1.1.13  | —           | Shows the top Reddit communities by member count, age and description above results. Works with the Reddit engine, or standalone with a Reddit cookie. |
+| Reddit Communities   | Plugin | 1.1.14  | —           | Shows the top Reddit communities by member count, age and description above results. Works with the Reddit engine, or standalone with a Reddit cookie. |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -48,7 +48,7 @@ A slot plugin that shows the top communities from Reddit results, sorted by memb
 
 When the Reddit engine is installed, the plugin uses the counts that engine attaches to its community results. It can also work on its own: paste a signed-in Reddit cookie into the plugin's `Reddit cookies` setting and it reads the count, age, icon and description from `about.json` for any `reddit.com/r/<name>` link in the results, including links returned by other engines. Without a cookie, only results that already carry a count can produce cards.
 
-`Source` chooses where candidates come from. `From results` (the default) uses community links in the results. `Direct` ignores the results and looks up communities from the whole query string (with spaces accounted for) and from each individual word. It also searches Reddit's community index, which matches community names and descriptions. `Direct` needs a Reddit cookie to be set. The number of lookups is capped by `Top communities count`.
+`Source` chooses where candidates come from. `From results` (the default) uses community links in the results. `Direct` ignores the results and passes the whole query to Reddit's community search, which matches community names and descriptions. `Direct` needs a Reddit cookie to be set. The number of lookups is capped by `Top communities count`.
 
 Communities Reddit marks NSFW are hidden when safe search is `moderate` or `strict`, and shown when it is `off`. Web searches in degoog use the engine's setting, so when the Reddit engine is installed its saved `Safe Search` setting controls this. The plugin's own `Safe search` setting applies only when the Reddit engine is not installed.
 
