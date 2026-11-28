@@ -32,6 +32,7 @@ let template = '';
 let fallbackIcon = '';
 let cookies = '';
 let source = 'results';
+let sortMode = 'members';
 let safeSearchSetting = 'moderate';
 
 const _esc = value => {
@@ -164,7 +165,7 @@ export const slot = {
   waitForResults: true,
   timeoutMs: 20000,
   description:
-    "Shows the top Reddit communities by member count from Reddit results. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
+    "Shows Reddit communities from search results with member count, age and description, sorted by members or relevance. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
 
   settingsSchema: [
     {
@@ -174,6 +175,16 @@ export const slot = {
       default: '5',
       placeholder: '5',
       description: 'Maximum number of community cards to display (1–10).',
+    },
+    {
+      key: 'sort',
+      label: 'Sort',
+      type: 'select',
+      options: ['members', 'relevance'],
+      optionLabels: ['Members', 'Relevance'],
+      default: 'members',
+      description:
+        'Members sorts by member count, highest first. Relevance keeps the order of the results, or Reddit community search result order in Direct mode.',
     },
     {
       key: 'source',
@@ -195,7 +206,7 @@ export const slot = {
     },
     {
       key: 'safeSearch',
-      label: 'Safe search',
+      label: 'Safe Search',
       type: 'select',
       options: ['off', 'moderate', 'strict'],
       default: 'moderate',
@@ -216,6 +227,7 @@ export const slot = {
       cookies = settings.cookies.trim();
     }
     source = settings?.source === 'direct' ? 'direct' : 'results';
+    sortMode = settings?.sort === 'relevance' ? 'relevance' : 'members';
     safeSearchSetting =
       settings?.safeSearch === 'off' || settings?.safeSearch === 'strict' ? settings.safeSearch : 'moderate';
   },
@@ -340,7 +352,7 @@ export const slot = {
     }
 
     if (communities.length === 0) return { title: '', html: '' };
-    communities.sort((a, b) => b.memberCount - a.memberCount);
+    if (sortMode === 'members') communities.sort((a, b) => b.memberCount - a.memberCount);
 
     const cards = communities.slice(0, maxCommunities).map(result => {
       const community = result.community;
@@ -370,7 +382,7 @@ export const slot = {
 
     const content =
       `<div class="rd-slot-wrap">` +
-      `<h4 class="rd-slot-heading">Top communities by members</h4>` +
+      `<h4 class="rd-slot-heading">${sortMode === 'members' ? 'Top communities by members' : 'Communities by relevance'}</h4>` +
       `<div class="rd-slot-grid">${cards.join('')}</div>` +
       `</div>`;
     return { title: 'Reddit Communities', html: _render({ content }) };
