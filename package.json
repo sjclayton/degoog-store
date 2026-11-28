@@ -9,7 +9,7 @@
       "path": "plugins/reddit-community-slot",
       "name": "Reddit Communities",
       "description": "Shows the top Reddit communities by member count from Reddit results. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
-      "version": "1.1.5",
+      "version": "1.1.6",
       "type": "slot"
     }
   ],
@@ -47,7 +47,7 @@
       "path": "engines/reddit",
       "name": "Reddit",
       "description": "Reddit post and community search through the old.reddit.com HTML results page. Supports safe-search, sort order, r/subreddit scoping and community member counts. Using the Camoufox transport is recommended.",
-      "version": "1.2.5",
+      "version": "1.2.6",
       "type": "web"
     },
     {

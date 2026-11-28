@@ -9,15 +9,15 @@ not a replacement for your main engines.
 
 ## What's in the repo
 
-| Extension            | Kind   | Version | Search type | What it does                                                                                                                                     |
-| -------------------- | ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
-| Reddit               | Engine | 1.2.5   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
-| Yandex               | Engine | 1.5.4   | web         | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
-| Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
-| Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
-| Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
-| Reddit Communities   | Plugin | 1.1.5   | —           | Slot that shows the top Reddit communities by member count, age and description. Works with the Reddit engine, or standalone with a Reddit cookie. |
+| Extension            | Kind   | Version | Search type | What it does                                                                                                                                           |
+| -------------------- | ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                         |
+| Reddit               | Engine | 1.2.6   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                                     |
+| Yandex               | Engine | 1.5.4   | web         | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty.       |
+| Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                       |
+| Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                                    |
+| Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                               |
+| Reddit Communities   | Plugin | 1.1.6   | —           | Shows the top Reddit communities by member count, age and description above results. Works with the Reddit engine, or standalone with a Reddit cookie. |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
