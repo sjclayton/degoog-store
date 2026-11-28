@@ -17,7 +17,7 @@ not a replacement for your main engines.
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
 | Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
-| Reddit Communities   | Plugin | 1.1.5   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
+| Reddit Communities   | Plugin | 1.1.5   | —           | Slot that shows the top Reddit communities by member count, age and description. Works with the Reddit engine, or standalone with a Reddit cookie. |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -36,7 +36,7 @@ Mojeek throttles automated traffic with a `403` "automated queries" page, which 
 
 Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their member count, age and description.
 
-Community counts come from Reddit's `about.json` endpoint and are cached briefly. The paired Reddit Communities slot plugin shows the top communities by members; set `Top communities count` in its settings. Turn off `Community member counts` in the engine settings to skip the extra lookups.
+Community counts come from Reddit's `about.json` endpoint and are cached briefly. The separate Reddit Communities slot plugin can show the top communities by members; set `Top communities count` in its settings. Turn off `Community member counts` in the engine settings to skip the extra lookups.
 
 Include `r/name` to search inside one community, for example `r/selfhosted degoog`. A `site:reddit.com` token is dropped because every result is already from Reddit.
 
@@ -44,11 +44,11 @@ Reddit only has on/off safe search: `off` includes NSFW posts, while `moderate` 
 
 ### Reddit Communities plugin
 
-A slot plugin that shows the top communities from Reddit results, sorted by member count. Each card shows the community icon (or a generic Snoo icon), `r/name`, age, member count and description. `Top communities count` sets the limit between 1 and 10.
+A slot plugin that shows the top communities from Reddit results, sorted by member count. Each card shows the community icon (or a generic Snoo icon), `r/name`, member count, age and description. `Top communities count` sets the limit between 1 and 10.
 
-The plugin reads counts from its own Reddit results and also from bare `reddit.com/r/...` links returned by other engines. For those, paste the same signed-in Reddit cookie into the plugin's `Reddit cookies` setting; without it Reddit refuses the lookup. Counts are cached briefly.
+When the Reddit engine is installed, the plugin uses the counts that engine attaches to its community results. It can also work on its own: paste a signed-in Reddit cookie into the plugin's `Reddit cookies` setting and it reads the count, age, icon and description from `about.json` for any `reddit.com/r/<name>` link in the results, including links returned by other engines. Without a cookie, only results that already carry a count can produce cards.
 
-The plugin requires the Reddit engine. A fresh engine install pulls it in automatically; existing installs need to install the plugin from the store separately. Uninstalling the engine does not remove the plugin, but the plugin shows nothing without Reddit results.
+The engine and the plugin install independently from the store; neither installs the other. Uninstalling the engine does not remove the plugin, but the `!r` bang goes away with the engine.
 
 Degoog does not request slot panels for bang searches. The plugin includes a small client script that handles `!r ...` searches: it reads the command results, asks the slot endpoint for the cards and places them above the results. Ordinary web searches use the normal slot path.
 
@@ -56,8 +56,8 @@ Degoog does not request slot panels for bang searches. The plugin includes a sma
 
 1. Add this repository in degoog's store settings:
    `https://github.com/sjclayton/degoog-store.git`
-2. Open the repo in the store and install the engines you want.
-3. Enable them under Settings > Engines.
+2. Open the repo in the store and install the engines and plugins you want.
+3. Enable the engines under Settings > Engines, and configure the slot plugin under Settings > Plugins if you installed it.
 
 ## Transports
 
@@ -172,7 +172,7 @@ words typed next to it. Yandex sees the degoog server IP address, not the visito
 and keeps the image under its own terms. The engine shows this warning in its
 settings. Do not enable it if that trade is not acceptable.
 
-The other three Yandex engines send only the query text and your cookies (if set) to Yandex. The Reddit engine sends the query text and your Reddit cookies to Reddit. The Mojeek engine sends the query text, your cookies (if set) and the ALTCHA solution to Mojeek.
+The other three Yandex engines send only the query text and your cookies (if set) to Yandex. The Reddit engine sends the query text and your Reddit cookies to Reddit, and the slot plugin sends `about.json` requests with its own cookie when it needs counts for community links without them. The Mojeek engine sends the query text, your cookies (if set) and the ALTCHA solution to Mojeek.
 
 ## Troubleshooting
 

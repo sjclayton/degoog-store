@@ -66,9 +66,11 @@ const tick = () => {
   lastQuery = query;
   busy = true;
   setTimeout(() => {
-    bridge(query).catch(() => {}).finally(() => {
-      busy = false;
-    });
+    bridge(query)
+      .catch(() => {})
+      .finally(() => {
+        busy = false;
+      });
   }, 600);
 };
 

@@ -113,7 +113,7 @@ export const slot = {
   waitForResults: true,
   timeoutMs: 20000,
   description:
-    "Shows the top Reddit communities by member count from Reddit engine results. Requires sjclayton's Reddit engine to be installed.",
+    "Shows the top Reddit communities by member count from Reddit results. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
 
   settingsSchema: [
     {
@@ -129,7 +129,8 @@ export const slot = {
       label: 'Reddit cookies',
       type: 'password',
       secret: true,
-      description: 'Paste the same signed-in Reddit cookie used by the Reddit engine. Needed to read member counts from community links returned by other engines.',
+      description:
+        'Paste a signed-in Reddit cookie. Needed for community links that do not already carry a count, such as links from other engines or searches without the Reddit engine.',
     },
   ],
 
