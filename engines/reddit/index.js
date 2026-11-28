@@ -11,7 +11,7 @@ import {
   SAFE_MODES,
   SORT_MODES,
 } from './request.js';
-import { formatCommunitySnippet } from './community.js';
+import { formatCommunitySnippet, parseAboutJson } from './community.js';
 import { isSearchPage, parseNext, parseWeb } from './parse.js';
 
 export const type = 'web';
@@ -69,7 +69,7 @@ export default class RedditEngine {
         redirect: 'follow',
       });
       if (response.ok) {
-        const json = await response.json();
+        const json = parseAboutJson(await response.text());
         const count = Number(json?.data?.subscribers);
         if (Number.isFinite(count) && count > 0) {
           stats = {

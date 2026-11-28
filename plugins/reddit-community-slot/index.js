@@ -1,3 +1,10 @@
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_FAIL_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX = 200;
+const LOOKUP_MAX = 10;
+const COMMUNITY_URL_RE = /^https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([^/?#]+)\/?$/i;
+const statsCache = new Map();
+
 let maxCommunities = 5;
 let template = '';
 let fallbackIcon = '';
@@ -16,6 +23,82 @@ const _formatCount = value => {
 };
 
 const _render = data => template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] ?? '');
+
+const _parseAbout = text => {
+  const raw = typeof text === 'string' ? text.trim() : '';
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {}
+  const pre = raw.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+  const body = (pre ? pre[1] : raw)
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/gi, "'");
+  try {
+    return JSON.parse(body.trim());
+  } catch {}
+  const start = body.indexOf('{');
+  const end = body.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  try {
+    return JSON.parse(body.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+};
+
+const _ageLabel = utc => {
+  const value = Number(utc);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  const days = Math.floor((Date.now() / 1000 - value) / 86400);
+  if (days >= 365) {
+    const n = Math.floor(days / 365);
+    return `${n} year${n === 1 ? '' : 's'} old`;
+  }
+  if (days >= 30) {
+    const n = Math.floor(days / 30);
+    return `${n} month${n === 1 ? '' : 's'} old`;
+  }
+  const n = Math.max(days, 1);
+  return `${n} day${n === 1 ? '' : 's'} old`;
+};
+
+const _fetchStats = async (name, fetchFn) => {
+  const key = name.toLowerCase();
+  const cached = statsCache.get(key);
+  if (cached && cached.expires > Date.now()) return cached.stats;
+  let stats = null;
+  try {
+    const response = await fetchFn(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'degoog-reddit-community-slot/1.0',
+      },
+    });
+    if (response.ok) {
+      const json = _parseAbout(await response.text());
+      const count = Number(json?.data?.subscribers);
+      if (Number.isFinite(count) && count > 0) {
+        stats = {
+          count: Math.floor(count),
+          icon: String(json?.data?.icon_img || json?.data?.community_icon || ''),
+          age: _ageLabel(json?.data?.created_utc),
+          description: String(json?.data?.public_description || ''),
+        };
+      }
+    }
+  } catch {}
+  statsCache.set(key, {
+    stats,
+    expires: Date.now() + (stats ? CACHE_TTL_MS : CACHE_FAIL_TTL_MS),
+  });
+  if (statsCache.size > CACHE_MAX) statsCache.delete(statsCache.keys().next().value);
+  return stats;
+};
 
 export const slot = {
   isClientExposed: false,
@@ -53,15 +136,46 @@ export const slot = {
 
   async execute(_query, context) {
     const results = Array.isArray(context?.results) ? context.results : [];
+    const fetchFn = context?.fetch ?? fetch;
     const seen = new Set();
     const communities = [];
+    let lookups = 0;
 
     for (const result of results) {
-      if (!result?.community || !Number.isFinite(result.memberCount)) continue;
-      const subreddit = String(result.community.subreddit || '').toLowerCase();
-      if (!subreddit || seen.has(subreddit)) continue;
-      seen.add(subreddit);
-      communities.push(result);
+      let name = String(result?.community?.subreddit || '').replace(/^r\//i, '');
+      if (!name) {
+        const match = String(result?.url || '').match(COMMUNITY_URL_RE);
+        if (match) name = match[1];
+      }
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      let stats = null;
+      if (Number.isFinite(result?.memberCount) && result.memberCount > 0) {
+        stats = {
+          count: Math.floor(result.memberCount),
+          icon: String(result?.community?.icon || ''),
+          age: String(result?.community?.age || ''),
+          description: String(result?.community?.description || ''),
+        };
+      } else if (lookups < LOOKUP_MAX) {
+        lookups++;
+        stats = await _fetchStats(name, fetchFn);
+      }
+      if (!stats || !stats.count) continue;
+
+      communities.push({
+        url: result.url,
+        memberCount: stats.count,
+        community: {
+          subreddit: `r/${key}`,
+          age: stats.age || String(result?.community?.age || ''),
+          description: stats.description || String(result?.snippet || ''),
+          icon: stats.icon,
+        },
+      });
     }
 
     if (communities.length === 0) return { title: '', html: '' };

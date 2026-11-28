@@ -18,6 +18,33 @@ export const formatMemberCount = value => {
   return String(Math.round(n));
 };
 
+export const parseAboutJson = text => {
+  const raw = typeof text === 'string' ? text.trim() : '';
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {}
+  const pre = raw.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+  const body = (pre ? pre[1] : raw)
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/gi, "'");
+  try {
+    return JSON.parse(body.trim());
+  } catch {}
+  const start = body.indexOf('{');
+  const end = body.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  try {
+    return JSON.parse(body.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+};
+
 export const formatCommunitySnippet = result => {
   const community = result?.community ?? {};
   const count = Number.isFinite(result?.memberCount)
