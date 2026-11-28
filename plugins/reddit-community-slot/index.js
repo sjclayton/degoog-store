@@ -182,7 +182,7 @@ export const slot = {
       optionLabels: ['From results', 'Direct'],
       default: 'results',
       description:
-        'From results uses subreddit links in the search results. Direct looks up communities from the query itself, including matches in community descriptions. Direct requires the Reddit cookie.',
+        'From results uses subreddit links in the search results. Direct looks up communities from the query itself, including matches in community descriptions. Direct requires a cookie to be set below.',
     },
     {
       key: 'cookies',
