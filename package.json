@@ -9,7 +9,7 @@
       "path": "plugins/reddit-community-slot",
       "name": "Reddit Communities",
       "description": "Shows Reddit communities from search results with member count, age and description, sorted by member count or relevance. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "type": "slot"
     }
   ],

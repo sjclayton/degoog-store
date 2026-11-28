@@ -170,7 +170,7 @@ export const slot = {
   settingsSchema: [
     {
       key: 'maxCommunities',
-      label: 'Top communities count',
+      label: 'Max communities count',
       type: 'text',
       default: '5',
       placeholder: '5',
