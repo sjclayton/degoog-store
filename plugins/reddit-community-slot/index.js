@@ -9,6 +9,7 @@ const statsCache = new Map();
 let maxCommunities = 5;
 let template = '';
 let fallbackIcon = '';
+let cookies = '';
 
 const _esc = value => {
   if (typeof value !== 'string') return '';
@@ -68,7 +69,7 @@ const _ageLabel = utc => {
   return `${n} day${n === 1 ? '' : 's'} old`;
 };
 
-const _fetchStats = async (name, fetchFn, signal) => {
+const _fetchStats = async (name, fetchFn, signal, cookieHeader = '') => {
   const key = name.toLowerCase();
   const cached = statsCache.get(key);
   if (cached && cached.expires > Date.now()) return cached.stats;
@@ -78,6 +79,7 @@ const _fetchStats = async (name, fetchFn, signal) => {
       headers: {
         Accept: 'application/json',
         'User-Agent': 'degoog-reddit-community-slot/1.0',
+        ...(cookieHeader.trim() ? { Cookie: cookieHeader.trim() } : {}),
       },
       redirect: 'manual',
       signal,
@@ -88,7 +90,7 @@ const _fetchStats = async (name, fetchFn, signal) => {
       if (Number.isFinite(count) && count > 0) {
         stats = {
           count: Math.floor(count),
-          icon: String(json?.data?.icon_img || json?.data?.community_icon || ''),
+          icon: String(json?.data?.icon_img || json?.data?.community_icon || '').replace(/&amp;/g, '&'),
           age: _ageLabel(json?.data?.created_utc),
           description: String(json?.data?.public_description || ''),
         };
@@ -122,6 +124,13 @@ export const slot = {
       placeholder: '5',
       description: 'Maximum number of community cards to display (1–10).',
     },
+    {
+      key: 'cookies',
+      label: 'Reddit cookies',
+      type: 'password',
+      secret: true,
+      description: 'Paste the same signed-in Reddit cookie used by the Reddit engine. Needed to read member counts from community links returned by other engines.',
+    },
   ],
 
   init(ctx) {
@@ -132,6 +141,9 @@ export const slot = {
   configure(settings) {
     const n = parseInt(settings?.maxCommunities ?? '5', 10);
     maxCommunities = Number.isFinite(n) ? Math.max(1, Math.min(10, n)) : 5;
+    if (typeof settings?.cookies === 'string' && settings.cookies !== '__SET__') {
+      cookies = settings.cookies.trim();
+    }
   },
 
   trigger() {
@@ -178,7 +190,7 @@ export const slot = {
       const timer = setTimeout(() => controller.abort(), CACHE_BUDGET_MS);
       try {
         await Promise.allSettled(
-          pending.map(candidate => _fetchStats(candidate.name, fetchFn, controller.signal)),
+          pending.map(candidate => _fetchStats(candidate.name, fetchFn, controller.signal, cookies)),
         );
       } finally {
         clearTimeout(timer);

@@ -83,7 +83,7 @@ export default class RedditEngine {
           const iconMatch = text.match(/&quot;icon_img&quot;\s*:\s*&quot;([^&]+?)&quot;|"icon_img"\s*:\s*"([^"]+)"/);
           stats = {
             count: Math.floor(count),
-            icon: String(json?.data?.icon_img || json?.data?.community_icon || iconMatch?.[1] || iconMatch?.[2] || ''),
+            icon: String(json?.data?.icon_img || json?.data?.community_icon || iconMatch?.[1] || iconMatch?.[2] || '').replace(/&amp;/g, '&'),
           };
         }
       }

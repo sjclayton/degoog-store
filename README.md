@@ -12,12 +12,12 @@ not a replacement for your main engines.
 | Extension            | Kind   | Version | Search type | What it does                                                                                                                                     |
 | -------------------- | ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
-| Reddit               | Engine | 1.2.3   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
+| Reddit               | Engine | 1.2.4   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
 | Yandex               | Engine | 1.5.4   | web         | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
 | Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
-| Reddit Communities   | Plugin | 1.1.1   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
+| Reddit Communities   | Plugin | 1.1.3   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -44,9 +44,11 @@ Reddit only has on/off safe search: `off` includes NSFW posts, while `moderate` 
 
 ### Reddit Communities plugin
 
-A slot plugin that shows the top communities from Reddit engine results, sorted by member count. Each card shows the community icon (or a generic Snoo icon), `r/name`, age, member count and description. `Top communities count` sets the limit between 1 and 10.
+A slot plugin that shows the top communities from Reddit results, sorted by member count. Each card shows the community icon (or a generic Snoo icon), `r/name`, age, member count and description. `Top communities count` sets the limit between 1 and 10.
 
-The plugin requires the Reddit engine. A fresh engine install pulls it in automatically; existing installs need to install the plugin from the store separately. Uninstalling the engine does not remove the plugin, but the plugin shows nothing without Reddit results.
+The plugin reads counts from its own Reddit results and also from bare `reddit.com/r/...` links returned by other engines. For those, paste the same signed-in Reddit cookie into the plugin's `Reddit cookies` setting; without it Reddit refuses the lookup. Counts are cached briefly.
+
+The plugin requires the Reddit engine. A fresh engine install pulls it in automatically; existing installs need to install the plugin from the store separately. Uninstalling the engine does not remove the plugin, but the plugin shows nothing without Reddit results. Bang searches (`!r ...`) use degoog's command path, which does not request slot panels, so the slot appears on ordinary web searches only.
 
 ## Install
 
