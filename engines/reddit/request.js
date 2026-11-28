@@ -1,7 +1,7 @@
 export const FALLBACK_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
 
-export const DOMAIN = 'www.reddit.com';
+export const DOMAIN = 'old.reddit.com';
 export const SAFE_MODES = ['off', 'moderate', 'strict'];
 export const SORT_MODES = ['relevance', 'hot', 'top', 'new', 'comments'];
 export const MAX_PAGE = 5;
@@ -18,7 +18,6 @@ export const BLOCKED_MARKERS = [
   'whoa there, pardner',
   'blocked by network security',
   'log in or sign up to personalize your feed',
-  'prove your humanity',
 ];
 
 export const isBlocked = (response, html) => {
@@ -36,7 +35,7 @@ export const resolveSafe = (engineSafe, context) => {
 };
 
 const SUBREDDIT_RE = /(?:^|\s)\/?r\/([A-Za-z0-9_]{2,21})(?=\s|$)/;
-const SITE_OPERATOR_RE = /(?:^|\s)site:(?:https?:\/\/)?(?:[A-Za-z0-9-]+\.)?reddit\.com\/?(?=\s|$)/gi;
+const SITE_OPERATOR_RE = /(?:^|\s)site:(?:https?:\/\/)?(?:www\.|old\.)?reddit\.com\/?(?=\s|$)/gi;
 
 export const splitSubredditQuery = query => {
   const stripped = query.replace(SITE_OPERATOR_RE, ' ').replace(/\s+/g, ' ').trim() || query;
@@ -58,20 +57,12 @@ export const buildUrl = (query, timeFilter, opts) => {
     q: text,
     sort: SORT_MODES.includes(sortBy) ? sortBy : 'relevance',
     t: WITHIN[timeFilter] ?? 'all',
-    limit: '25',
   });
   if (subreddit) params.set('restrict_sr', 'on');
   if (safeSearch === 'off') params.set('include_over_18', 'on');
 
-  const path = subreddit ? `/r/${encodeURIComponent(subreddit)}/search.json` : '/search.json';
+  const path = subreddit ? `/r/${encodeURIComponent(subreddit)}/search` : '/search';
   return `https://${DOMAIN}${path}?${params.toString()}`;
-};
-
-export const withListing = (url, type, after = '') => {
-  const parsed = new URL(url);
-  parsed.searchParams.set('type', type);
-  if (after) parsed.searchParams.set('after', String(after));
-  return parsed.toString();
 };
 
 export const buildCookies = (cookies = '', safeSearch = 'moderate') => {
@@ -82,7 +73,7 @@ export const buildCookies = (cookies = '', safeSearch = 'moderate') => {
 
 export const buildHeaders = (context, cookies = '') => ({
   'User-Agent': context?.userAgent?.() ?? FALLBACK_UA,
-  Accept: 'application/json,text/html;q=0.9,*/*;q=0.8',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'Accept-Language': context?.buildAcceptLanguage?.() ?? 'en-US,en;q=0.9',
   ...(cookies ? { Cookie: cookies } : {}),
 });
