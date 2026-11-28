@@ -156,7 +156,27 @@ export const slot = {
     const fetchFn = context?.fetch ?? fetch;
     const seen = new Set();
     const candidates = [];
+    const existing = new Map();
     let lookups = 0;
+
+    for (const result of results) {
+      const count = Number(result?.memberCount);
+      if (Number.isFinite(count) && count > 0) {
+        let sub = String(result?.community?.subreddit || '').replace(/^r\//i, '');
+        if (!sub) {
+          const m = String(result?.url || '').match(COMMUNITY_URL_RE);
+          if (m) sub = m[1];
+        }
+        if (sub) {
+          existing.set(sub.toLowerCase(), {
+            count: Math.floor(count),
+            icon: String(result?.community?.icon || ''),
+            age: String(result?.community?.age || ''),
+            description: String(result?.community?.description || ''),
+          });
+        }
+      }
+    }
 
     for (const result of results) {
       let name = String(result?.community?.subreddit || '').replace(/^r\//i, '');
@@ -177,6 +197,8 @@ export const slot = {
           age: String(result?.community?.age || ''),
           description: String(result?.community?.description || ''),
         };
+      } else if (existing.has(key)) {
+        stats = existing.get(key);
       } else if (lookups < LOOKUP_MAX) {
         lookups++;
       } else {
