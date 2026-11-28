@@ -32,7 +32,7 @@ export const SETTINGS_SCHEMA = [
     type: 'password',
     secret: true,
     description:
-      'Reddit only serves old.reddit.com to logged-in accounts. Paste the full Cookie header from a signed-in old.reddit.com browser session. reddit_session carries the login; token_v2 and the other cookies are optional. The account must have used Old Reddit in the last six months unless it moderates a subreddit. Keep it private.',
+      'Reddit only serves old.reddit.com to logged-in accounts. Paste the full Cookie header from any signed-in Reddit browser session. reddit_session carries the login; token_v2 and the other cookies are optional. Reddit has announced it will limit Old Reddit to accounts that have used it in the last six months, apart from logged-in moderators, but has not given a rollout date. Keep it private.',
   },
   {
     key: 'communityStats',

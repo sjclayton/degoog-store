@@ -12,7 +12,7 @@ not a replacement for your main engines.
 | Extension                                                     | Kind   | Version | Search type | What it does                                                   |
 | ------------------------------------------------------------- | ------ | ------- | ----------- | -------------------------------------------------------------- |
 | [Mojeek](engines/mojeek/README.md)                            | Engine | 1.0.2   | web         | Mojeek web search with automatic ALTCHA solving.               |
-| [Reddit](engines/reddit/README.md)                            | Engine | 1.2.7   | web         | Reddit post and community search through old.reddit.com.       |
+| [Reddit](engines/reddit/README.md)                            | Engine | 1.2.9   | web         | Reddit post and community search through old.reddit.com.       |
 | [Yandex](engines/yandex/README.md)                            | Engine | 1.5.5   | web         | Web search on yandex.com, including `site:` queries.           |
 | [Yandex Images](engines/yandex-images/README.md)              | Engine | 1.2.5   | images      | Image search with size, type and layout filters.               |
 | [Yandex Videos](engines/yandex-videos/README.md)              | Engine | 1.2.5   | videos      | Video search through Yandex's JSON endpoint.                   |
@@ -50,7 +50,7 @@ Settings for the Yandex and Reddit web engines:
 | ------------------ | ------------------------------------------------------------- |
 | Outgoing transport | Camoufox                                                      |
 | Timeout            | `45000` ms                                                    |
-| Cookies            | `Cookie` header from yandex.com or a signed-in old.reddit.com |
+| Cookies            | `Cookie` header from yandex.com or a signed-in Reddit session |
 
 The timeout matters. On a normal query the Yandex web engine tries the modern
 page twice, waiting 1.5 seconds between captcha retries. A query with `site:`
@@ -92,8 +92,8 @@ transport, as it cannot submit the challenge.
 The steps are the same in any modern browser (Chrome, Edge, Firefox, Safari,
 and others); only the menu labels differ slightly:
 
-1. Open yandex.com, mojeek.com or old.reddit.com in your browser, and sign in
-   only for Reddit.
+1. Open yandex.com, mojeek.com or reddit.com in your browser, and sign in only
+   for Reddit.
 2. Open the browser's developer tools (usually `F12`, or "Inspect" from the
    right-click menu).
 3. Switch to the Network tab and reload the page.
@@ -103,9 +103,9 @@ and others); only the menu labels differ slightly:
    whole value.
 6. Paste the value into the engine's Cookies field and save.
 
-For Reddit, `reddit_session` is the cookie that carries the login; `token_v2`
-and the rest are optional but fine to include. Some browsers group request
-headers under a "Request Headers" heading.
+For Reddit, any signed-in cookie works. `reddit_session` is the cookie that
+carries the login; `token_v2` and the rest are optional but fine to include. Some
+browsers group request headers under a "Request Headers" heading.
 
 The header is stored in `plugin-settings.json` on the degoog host in plain
 text, and Camoufox passes it to the browser context. Treat it like a password.

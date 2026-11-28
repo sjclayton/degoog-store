@@ -47,7 +47,7 @@
       "path": "engines/reddit",
       "name": "Reddit",
       "description": "Reddit post and community search through the old.reddit.com HTML results page. Supports safe-search, sort order, r/subreddit scoping and community member counts. Using the Camoufox transport is recommended.",
-      "version": "1.2.7",
+      "version": "1.2.9",
       "type": "web"
     },
     {

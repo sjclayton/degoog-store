@@ -24,7 +24,7 @@ Use Camoufox with this engine. Reddit blocks most server IPs and plain HTTP clie
 | ------------------ | ------------------------------------------------------- | -------------------------------------------------------- |
 | Outgoing transport | Camoufox                                                | Reddit blocks most server IPs and plain HTTP clients.    |
 | Timeout            | `45000` ms                                              | Each page load fetches the earlier pages first.          |
-| Cookies            | `Cookie` header from a signed-in old.reddit.com session | Reddit only serves old.reddit.com to logged-in accounts. |
+| Cookies            | `Cookie` header from any signed-in Reddit session | Reddit only serves old.reddit.com to logged-in accounts. |
 
 Settings for the Camoufox transport itself:
 
@@ -47,16 +47,16 @@ Reddit only has on/off safe-search. `off` includes NSFW posts and sends the `ove
 
 ## Cookies
 
-Cookies are required. The steps are the same in any modern browser (Chrome, Edge, Firefox, Safari, and others); only the menu labels differ slightly:
+Cookies are required, and any signed-in Reddit cookie works. The steps are the same in any modern browser (Chrome, Edge, Firefox, Safari, and others); only the menu labels differ slightly:
 
-1. Open old.reddit.com in your browser and sign in.
+1. Open reddit.com in your browser and sign in.
 2. Open the browser's developer tools (usually `F12`, or "Inspect" from the right-click menu).
 3. Switch to the Network tab and reload the page.
 4. Select the first document request for the site (the page itself, not an image or script).
 5. In that request's headers, find the `Cookie` request header and copy its whole value.
 6. Paste the value into the engine's Cookies field and save.
 
-`reddit_session` is the cookie that carries the login; `token_v2` and the rest are optional but fine to include. Some browsers group request headers under a "Request Headers" heading. The account must have used Old Reddit in the last six months unless it moderates a subreddit.
+`reddit_session` is the cookie that carries the login; `token_v2` and the rest are optional but fine to include. Some browsers group request headers under a "Request Headers" heading. Reddit has [announced](https://www.reddit.com/r/modnews/comments/1wubgvt/continuing_our_infrastructure_updates_whats/) it will limit Old Reddit to accounts that have used it in the last six months, apart from logged-in moderators, but has not given a rollout date.
 
 The header is stored in `plugin-settings.json` on the degoog host in plain text, and Camoufox passes it to the browser context. Treat it like a password.
 
