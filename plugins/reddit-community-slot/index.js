@@ -2,6 +2,7 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_FAIL_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 200;
 const LOOKUP_MAX = 10;
+const CACHE_BUDGET_MS = 2500;
 const COMMUNITY_URL_RE = /^https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([^/?#]+)\/?$/i;
 const statsCache = new Map();
 
@@ -67,7 +68,7 @@ const _ageLabel = utc => {
   return `${n} day${n === 1 ? '' : 's'} old`;
 };
 
-const _fetchStats = async (name, fetchFn) => {
+const _fetchStats = async (name, fetchFn, signal) => {
   const key = name.toLowerCase();
   const cached = statsCache.get(key);
   if (cached && cached.expires > Date.now()) return cached.stats;
@@ -78,6 +79,7 @@ const _fetchStats = async (name, fetchFn) => {
         Accept: 'application/json',
         'User-Agent': 'degoog-reddit-community-slot/1.0',
       },
+      signal,
     });
     if (response.ok) {
       const json = _parseAbout(await response.text());
@@ -138,7 +140,7 @@ export const slot = {
     const results = Array.isArray(context?.results) ? context.results : [];
     const fetchFn = context?.fetch ?? fetch;
     const seen = new Set();
-    const communities = [];
+    const candidates = [];
     let lookups = 0;
 
     for (const result of results) {
@@ -162,17 +164,36 @@ export const slot = {
         };
       } else if (lookups < LOOKUP_MAX) {
         lookups++;
-        stats = await _fetchStats(name, fetchFn);
+      } else {
+        continue;
       }
-      if (!stats || !stats.count) continue;
+      candidates.push({ name, key, result, stats });
+    }
 
+    const pending = candidates.filter(candidate => !candidate.stats);
+    if (pending.length > 0) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), CACHE_BUDGET_MS);
+      try {
+        await Promise.allSettled(
+          pending.map(candidate => _fetchStats(candidate.name, fetchFn, controller.signal)),
+        );
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    const communities = [];
+    for (const candidate of candidates) {
+      const stats = candidate.stats ?? statsCache.get(candidate.key)?.stats;
+      if (!stats || !stats.count) continue;
       communities.push({
-        url: result.url,
+        url: candidate.result.url,
         memberCount: stats.count,
         community: {
-          subreddit: `r/${key}`,
-          age: stats.age || String(result?.community?.age || ''),
-          description: stats.description || String(result?.snippet || ''),
+          subreddit: `r/${candidate.key}`,
+          age: stats.age || String(candidate.result?.community?.age || ''),
+          description: stats.description || String(candidate.result?.snippet || ''),
           icon: stats.icon,
         },
       });

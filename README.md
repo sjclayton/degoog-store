@@ -12,7 +12,7 @@ not a replacement for your main engines.
 | Extension            | Kind   | Version | Search type | What it does                                                                                                                                     |
 | -------------------- | ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                   |
-| Reddit               | Engine | 1.2.0   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
+| Reddit               | Engine | 1.2.1   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                               |
 | Yandex               | Engine | 1.5.4   | web         | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty. |
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |

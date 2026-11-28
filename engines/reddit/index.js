@@ -24,6 +24,7 @@ const COMMUNITY_TTL_MS = 60 * 60 * 1000;
 const COMMUNITY_FAIL_TTL_MS = 5 * 60 * 1000;
 const COMMUNITY_CACHE_MAX = 200;
 const COMMUNITY_LOOKUP_MAX = 10;
+const COMMUNITY_BUDGET_MS = 2500;
 const COMMUNITY_CACHE = new Map();
 
 export default class RedditEngine {
@@ -52,7 +53,7 @@ export default class RedditEngine {
     }
   }
 
-  async _communityStats(subreddit, context, safe) {
+  async _communityStats(subreddit, context, safe, signal) {
     const name = String(subreddit || '').replace(/^r\//i, '');
     if (!name) return null;
     const key = name.toLowerCase();
@@ -67,6 +68,7 @@ export default class RedditEngine {
           Accept: 'application/json',
         },
         redirect: 'follow',
+        signal,
       });
       if (response.ok) {
         const json = parseAboutJson(await response.text());
@@ -95,12 +97,27 @@ export default class RedditEngine {
     for (const result of results) {
       const subreddit = result?.community?.subreddit;
       if (!subreddit) continue;
-      const key = String(subreddit).toLowerCase();
+      const key = String(subreddit).replace(/^r\//i, '').toLowerCase();
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(result);
     }
-    for (const [key, items] of [...groups].slice(0, COMMUNITY_LOOKUP_MAX)) {
-      const stats = await this._communityStats(key, context, safe);
+    const targets = [...groups].slice(0, COMMUNITY_LOOKUP_MAX);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), COMMUNITY_BUDGET_MS);
+    if (context?.signal?.aborted) {
+      controller.abort();
+    } else if (context?.signal) {
+      context.signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+    try {
+      await Promise.allSettled(
+        targets.map(([key]) => this._communityStats(key, context, safe, controller.signal)),
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+    for (const [key, items] of targets) {
+      const stats = COMMUNITY_CACHE.get(key)?.stats;
       if (!stats) continue;
       for (const result of items) {
         result.memberCount = stats.count;
