@@ -93,12 +93,13 @@ const _ageLabel = utc => {
 };
 
 const _searchNames = async (query, fetchFn, signal) => {
-  const url = `https://old.reddit.com/subreddits/search?q=${encodeURIComponent(query)}&sort=relevance`;
+  const url = `https://old.reddit.com/subreddits/search?q=${encodeURIComponent(query)}&sort=relevance&include_over_18=on`;
+  const cookie = cookies.trim();
   const response = await fetchFn(url, {
     headers: {
       Accept: 'text/html,application/xhtml+xml',
       'User-Agent': 'degoog-reddit-community-slot/1.0',
-      ...(cookies.trim() ? { Cookie: cookies.trim() } : {}),
+      ...(cookie ? { Cookie: /(?:^|;\s*)over18=/i.test(cookie) ? cookie : `${cookie}; over18=1` } : {}),
     },
     redirect: 'follow',
     signal,
