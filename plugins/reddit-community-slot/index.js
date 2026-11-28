@@ -216,7 +216,7 @@ export const slot = {
       options: ['off', 'moderate', 'strict'],
       default: 'moderate',
       description:
-        'Fallback for NSFW communities when the Reddit engine has no Safe Search setting. Web searches use engine settings, so this applies when the engine is absent.',
+        'Used only when the Reddit engine is not installed. With the engine installed, its Safe Search setting controls whether NSFW communities are shown.',
     },
   ],
 
