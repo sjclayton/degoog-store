@@ -80,7 +80,7 @@ They default to `curl-fallback`, which tries Bun's `fetch` first and retries wit
 the timeout empty to use the ten second default. Raise it to `20000` if you see
 timeouts. Plain `curl` also works if `curl-fallback` gives you trouble.
 
-### Cookies
+## Cookies
 
 Cookies are optional for Yandex and Mojeek, and required for Reddit. Yandex raises the
 captcha rate for anonymous sessions, and a real browser session lowers it.
