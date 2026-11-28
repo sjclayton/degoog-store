@@ -180,10 +180,10 @@ export const slot = {
       label: 'Source',
       type: 'select',
       options: ['results', 'direct'],
-      optionLabels: ['From results', 'Direct'],
+      optionLabels: ['Results', 'Direct'],
       default: 'results',
       description:
-        'From results uses subreddit links in the search results. Direct looks up communities from the query itself, including matches in community descriptions. Direct requires a cookie to be set below.',
+        'Results uses subreddit links found in the search results. Direct searches Reddit directly from the query itself, including matches in community descriptions. Direct requires a cookie to be set below.',
     },
     {
       key: 'cookies',
