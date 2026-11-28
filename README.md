@@ -137,7 +137,7 @@ Each extension's README has full notes.
 ### A captcha or a block
 
 The site blocked the IP or the session, not the engine. Add cookies, wait a
-little, switch the engine to Camoufox where supported, or lower the crawl rate.
+little, switch the engine transport to Camoufox where supported, or lower the crawl rate.
 See the extension's README for the exact message and fix.
 
 ### Engine timeout

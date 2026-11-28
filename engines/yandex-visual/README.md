@@ -39,7 +39,7 @@ Visual Search uploads every image to Yandex, a third party, along with any words
 
 ### Yandex asked for a captcha
 
-Yandex blocked the IP or the session, not the engine. Add cookies, wait a little, or switch the engine to Camoufox (if not already set). Lowering the crawl rate also helps.
+Yandex blocked the IP or the session, not the engine. Add cookies, wait a little, or switch the engine transport to Camoufox (if not already set). Lowering the crawl rate also helps.
 
 ### The engine says it changed its results page
 
