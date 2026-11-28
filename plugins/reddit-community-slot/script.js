@@ -4,35 +4,6 @@ const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&
 
 const escapeHtml = value => String(value ?? '').replace(ESCAPE_RE, ch => ESCAPES[ch]);
 
-const scriptSrc =
-  document.currentScript?.src ||
-  performance
-    .getEntriesByType('resource')
-    .map(entry => entry.name)
-    .find(name => /reddit-community-slot\/script\.js/.test(name)) ||
-  '';
-const pluginId = (scriptSrc.match(/\/plugins\/([^/]+)\//) || [])[1] || 'sjclayton-degoog-store-reddit-community-slot';
-
-const currentSafeMode = () => {
-  const raw = new URLSearchParams(location.search).get('safeMode');
-  if (raw === 'off' || raw === 'moderate' || raw === 'strict') return raw;
-  return 'moderate';
-};
-
-let lastMode = '';
-const postSafeMode = () => {
-  const mode = currentSafeMode();
-  if (mode === lastMode) return;
-  lastMode = mode;
-  fetch(`/api/plugin/${encodeURIComponent(pluginId)}/safe-mode`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ safeMode: mode }),
-  }).catch(() => {});
-};
-
-postSafeMode();
-
 const bangQuery = () => {
   const fromUrl = new URLSearchParams(location.search).get('q') || '';
   const fromInput = document.getElementById('results-search-input')?.value || '';
@@ -84,7 +55,6 @@ let busy = false;
 
 const tick = () => {
   if (busy) return;
-  postSafeMode();
   const query = bangQuery();
   if (!query) {
     lastQuery = '';

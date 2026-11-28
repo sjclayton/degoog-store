@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_FAIL_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 200;
@@ -8,13 +11,28 @@ const SEARCH_RESULT_RE =
   /<p class="titlerow"><a href="https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([A-Za-z0-9_]+)\/",?[^>]*class="title"/gi;
 const SEARCH_BUDGET_MS = 12000;
 const statsCache = new Map();
-const safeModes = new Map();
+
+const _engineSafeMode = () => {
+  try {
+    const file =
+      process.env.DEGOOG_PLUGIN_SETTINGS_FILE ||
+      join(process.env.DEGOOG_DATA_DIR || join(process.cwd(), 'data'), 'plugin-settings.json');
+    const store = JSON.parse(readFileSync(file, 'utf8'));
+    for (const [id, settings] of Object.entries(store)) {
+      if (typeof id !== 'string' || !id.toLowerCase().endsWith('reddit-engine')) continue;
+      const value = settings?.safeSearch;
+      if (value === 'off' || value === 'moderate' || value === 'strict') return value;
+    }
+  } catch {}
+  return null;
+};
 
 let maxCommunities = 5;
 let template = '';
 let fallbackIcon = '';
 let cookies = '';
 let source = 'results';
+let safeSearchSetting = 'moderate';
 
 const _esc = value => {
   if (typeof value !== 'string') return '';
@@ -122,15 +140,16 @@ const _fetchStats = async (name, fetchFn, signal, cookieHeader = '') => {
   if (cached && cached.expires > Date.now()) return cached.stats;
   let stats = null;
   try {
-    const response = await fetchFn(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`, {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'degoog-reddit-community-slot/1.0',
-        ...(cookieHeader.trim() ? { Cookie: cookieHeader.trim() } : {}),
-      },
-      redirect: 'manual',
-      signal,
-    });
+    const url = `https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`;
+    const headers = {
+      Accept: 'application/json',
+      'User-Agent': 'degoog-reddit-community-slot/1.0',
+      ...(cookieHeader.trim() ? { Cookie: cookieHeader.trim() } : {}),
+    };
+    let response = await fetchFn(url, { headers, redirect: 'manual', signal });
+    if (!response.ok) {
+      response = await fetchFn(url, { headers, redirect: 'follow', signal });
+    }
     if (response.ok) {
       const json = _parseAbout(await response.text());
       const count = Number(json?.data?.subscribers);
@@ -190,6 +209,15 @@ export const slot = {
       description:
         'Paste a signed-in Reddit cookie. Needed for community links that do not already carry a count, such as links from other engines or searches without the Reddit engine.',
     },
+    {
+      key: 'safeSearch',
+      label: 'Safe search',
+      type: 'select',
+      options: ['off', 'moderate', 'strict'],
+      default: 'moderate',
+      description:
+        'Fallback for NSFW communities when the Reddit engine has no Safe Search setting. Web searches use engine settings, so this applies when the engine is absent.',
+    },
   ],
 
   init(ctx) {
@@ -204,6 +232,8 @@ export const slot = {
       cookies = settings.cookies.trim();
     }
     source = settings?.source === 'direct' ? 'direct' : 'results';
+    safeSearchSetting =
+      settings?.safeSearch === 'off' || settings?.safeSearch === 'strict' ? settings.safeSearch : 'moderate';
   },
 
   trigger() {
@@ -238,15 +268,19 @@ export const slot = {
     }
 
     if (source === 'direct') {
-      const names = _queryNames(query);
+      const cleanQuery = String(query || '')
+        .trim()
+        .replace(/^!\S+\s*/, '');
+      const names = [];
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), SEARCH_BUDGET_MS);
       try {
-        names.push(...(await _searchNames(query, fetchFn, controller.signal)));
+        names.push(...(await _searchNames(cleanQuery, fetchFn, controller.signal)));
       } catch {
       } finally {
         clearTimeout(timer);
       }
+      names.push(..._queryNames(query));
       for (const name of names) {
         const key = name.toLowerCase();
         if (seen.has(key) || candidates.length >= maxCommunities) continue;
@@ -305,7 +339,7 @@ export const slot = {
     }
 
     const communities = [];
-    const mode = safeModes.get(context?.clientIp) ?? 'moderate';
+    const mode = _engineSafeMode() ?? safeSearchSetting ?? 'moderate';
     for (const candidate of candidates) {
       const stats = candidate.stats ?? statsCache.get(candidate.key)?.stats;
       if (!stats || !stats.count) continue;
@@ -359,27 +393,5 @@ export const slot = {
     return { title: 'Reddit Communities', html: _render({ content }) };
   },
 };
-
-export const routes = [
-  {
-    method: 'post',
-    path: '/safe-mode',
-    handler: async req => {
-      let body = {};
-      try {
-        body = await req.json();
-      } catch {}
-      const mode = ['off', 'moderate', 'strict'].includes(body?.safeMode) ? body.safeMode : 'moderate';
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || '';
-      if (ip) {
-        safeModes.set(ip, mode);
-        if (safeModes.size > 200) safeModes.delete(safeModes.keys().next().value);
-      }
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    },
-  },
-];
 
 export default { slot };
