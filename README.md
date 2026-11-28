@@ -11,13 +11,13 @@ not a replacement for your main engines.
 
 | Extension            | Kind   | Version | Search type | What it does                                                                                                                                           |
 | -------------------- | ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe search, time filters and optional cookies.                         |
+| Mojeek               | Engine | 1.0.1   | web         | Mojeek web search. Solves Mojeek's ALTCHA challenge automatically and supports safe-search, time filters and optional cookies.                         |
 | Reddit               | Engine | 1.2.6   | web         | Reddit post and community search through the old.reddit.com HTML results page. Requires a signed-in Reddit cookie.                                     |
 | Yandex               | Engine | 1.5.4   | web         | Web search on yandex.com. Understands the `site:` token and retries through Yandex's own `site` parameter when the plain query comes back empty.       |
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                       |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                                    |
-| Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                               |
-| Reddit Communities   | Plugin | 1.1.7   | —           | Shows the top Reddit communities by member count, age and description above results. Works with the Reddit engine, or standalone with a Reddit cookie. |
+| Yandex Visual Search | Engine | 1.2.5   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                               |
+| Reddit Communities   | Plugin | 1.1.9   | —           | Shows the top Reddit communities by member count, age and description above results. Works with the Reddit engine, or standalone with a Reddit cookie. |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
@@ -40,13 +40,17 @@ Community member counts come from Reddit's `about.json` endpoint and are cached 
 
 Include `r/name` to search inside one community, for example `r/selfhosted degoog`. A `site:reddit.com` token is dropped because every result is already from Reddit.
 
-Reddit only has on/off safe search: `off` includes NSFW posts, while `moderate` and `strict` hide them. The engine pages forward only, so page 3 loads pages 1 and 2 first, and pages stop being returned at 5.
+Reddit only has on/off safe-search: `off` includes NSFW posts, while `moderate` and `strict` hide them. The engine pages forward only, so page 3 loads pages 1 and 2 first, and pages stop being returned at 5.
 
 ### Reddit Communities plugin
 
 A slot plugin that shows the top communities from Reddit results, sorted by member count. Each card shows the community icon (or a generic Snoo icon), `r/name`, member count, age and description. `Top communities count` sets the limit between 1 and 10.
 
 When the Reddit engine is installed, the plugin uses the counts that engine attaches to its community results. It can also work on its own: paste a signed-in Reddit cookie into the plugin's `Reddit cookies` setting and it reads the count, age, icon and description from `about.json` for any `reddit.com/r/<name>` link in the results, including links returned by other engines. Without a cookie, only results that already carry a count can produce cards.
+
+`Source` chooses where candidates come from. `From results` (the default) uses community links in the results. `Direct` ignores the results and looks up communities from the whole query string (with spaces accounted for) and from each individual word. It also searches Reddit's community index, which matches community names and descriptions. `Direct` needs a Reddit cookie to be set. The number of lookups is capped by `Top communities count`.
+
+Communities Reddit marks NSFW are hidden when degoog's safe-search is `moderate` or `strict`, and shown when it is `off`. The plugin reads the current mode from the search URL; if no mode is present it defaults to `moderate`.
 
 ## Install
 
@@ -141,7 +145,7 @@ The short version: web engines on Camoufox with a 45 second timeout and cookies
 (required for Reddit, recommended for Yandex); media engines on curl-fallback
 with cookies.
 
-Safe search is a per-engine choice. `off` sends Yandex the `adult` flag, so
+Safe-search is a per-engine choice. `off` sends Yandex the `adult` flag, so
 unfiltered results come back unblurred. `moderate` keeps Yandex's default blur
 on NSFW results. `strict` turns on family mode.
 

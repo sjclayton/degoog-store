@@ -9,7 +9,7 @@
       "path": "plugins/reddit-community-slot",
       "name": "Reddit Communities",
       "description": "Shows the top Reddit communities by member count from Reddit results. Uses counts from sjclayton's Reddit engine when available, or works standalone when a Reddit cookie is set in its settings.",
-      "version": "1.1.7",
+      "version": "1.1.9",
       "type": "slot"
     }
   ],
@@ -32,8 +32,8 @@
     {
       "path": "engines/yandex-visual",
       "name": "Yandex Visual Search",
-      "description": "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images, NSFW results are not blocked when safe search is off. Supports optional cookies",
-      "version": "1.2.4",
+      "description": "Yandex reverse image search. Upload an image or use the image tab to find pages containing it and similar images, NSFW results are not blocked when safe-search is off. Supports optional cookies",
+      "version": "1.2.5",
       "type": "images"
     },
     {

@@ -4,12 +4,17 @@ const CACHE_MAX = 200;
 const LOOKUP_MAX = 10;
 const CACHE_BUDGET_MS = 5000;
 const COMMUNITY_URL_RE = /^https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([^/?#]+)\/?$/i;
+const SEARCH_RESULT_RE =
+  /<p class="titlerow"><a href="https?:\/\/(?:www\.|old\.)?reddit\.com\/r\/([A-Za-z0-9_]+)\/",?[^>]*class="title"/gi;
+const SEARCH_BUDGET_MS = 12000;
 const statsCache = new Map();
+const safeModes = new Map();
 
 let maxCommunities = 5;
 let template = '';
 let fallbackIcon = '';
 let cookies = '';
+let source = 'results';
 
 const _esc = value => {
   if (typeof value !== 'string') return '';
@@ -69,6 +74,48 @@ const _ageLabel = utc => {
   return `${n} day${n === 1 ? '' : 's'} old`;
 };
 
+const _queryNames = query => {
+  const names = [];
+  const add = value => {
+    const name = String(value || '').replace(/[^A-Za-z0-9_]/g, '');
+    if (name && !names.some(existing => existing.toLowerCase() === name.toLowerCase())) {
+      names.push(name);
+    }
+  };
+  const clean = String(query || '')
+    .trim()
+    .replace(/^!\S+\s*/, '');
+  add(clean.replace(/\s+/g, ''));
+  add(clean.replace(/\s+/g, '_'));
+  for (const word of clean.split(/\s+/)) add(word);
+  return names;
+};
+
+const _searchNames = async (query, fetchFn, signal) => {
+  const url = `https://old.reddit.com/subreddits/search?q=${encodeURIComponent(query)}&sort=relevance`;
+  const response = await fetchFn(url, {
+    headers: {
+      Accept: 'text/html,application/xhtml+xml',
+      'User-Agent': 'degoog-reddit-community-slot/1.0',
+      ...(cookies.trim() ? { Cookie: cookies.trim() } : {}),
+    },
+    redirect: 'follow',
+    signal,
+  });
+  if (!response.ok) return [];
+  const html = await response.text();
+  const names = [];
+  SEARCH_RESULT_RE.lastIndex = 0;
+  let match;
+  while ((match = SEARCH_RESULT_RE.exec(html))) {
+    const name = match[1];
+    if (!names.some(existing => existing.toLowerCase() === name.toLowerCase())) {
+      names.push(name);
+    }
+  }
+  return names;
+};
+
 const _fetchStats = async (name, fetchFn, signal, cookieHeader = '') => {
   const key = name.toLowerCase();
   const cached = statsCache.get(key);
@@ -93,6 +140,7 @@ const _fetchStats = async (name, fetchFn, signal, cookieHeader = '') => {
           icon: String(json?.data?.icon_img || json?.data?.community_icon || '').replace(/&amp;/g, '&'),
           age: _ageLabel(json?.data?.created_utc),
           description: String(json?.data?.public_description || ''),
+          over18: json?.data?.over18 === true,
         };
       }
     }
@@ -125,6 +173,16 @@ export const slot = {
       description: 'Maximum number of community cards to display (1–10).',
     },
     {
+      key: 'source',
+      label: 'Source',
+      type: 'select',
+      options: ['results', 'direct'],
+      optionLabels: ['From results', 'Direct'],
+      default: 'results',
+      description:
+        'From results uses subreddit links in the search results. Direct looks up communities from the query itself, including matches in community descriptions. Direct requires the Reddit cookie.',
+    },
+    {
       key: 'cookies',
       label: 'Reddit cookies',
       type: 'password',
@@ -145,13 +203,14 @@ export const slot = {
     if (typeof settings?.cookies === 'string' && settings.cookies !== '__SET__') {
       cookies = settings.cookies.trim();
     }
+    source = settings?.source === 'direct' ? 'direct' : 'results';
   },
 
   trigger() {
     return true;
   },
 
-  async execute(_query, context) {
+  async execute(query, context) {
     const results = Array.isArray(context?.results) ? context.results : [];
     const fetchFn = context?.fetch ?? fetch;
     const seen = new Set();
@@ -178,33 +237,58 @@ export const slot = {
       }
     }
 
-    for (const result of results) {
-      let name = String(result?.community?.subreddit || '').replace(/^r\//i, '');
-      if (!name) {
-        const match = String(result?.url || '').match(COMMUNITY_URL_RE);
-        if (match) name = match[1];
+    if (source === 'direct') {
+      const names = _queryNames(query);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), SEARCH_BUDGET_MS);
+      try {
+        names.push(...(await _searchNames(query, fetchFn, controller.signal)));
+      } catch {
+      } finally {
+        clearTimeout(timer);
       }
-      if (!name) continue;
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
+      for (const name of names) {
+        const key = name.toLowerCase();
+        if (seen.has(key) || candidates.length >= maxCommunities) continue;
+        seen.add(key);
+        candidates.push({
+          name,
+          key,
+          result: { url: `https://www.reddit.com/r/${name}` },
+          stats: null,
+        });
+      }
+    }
 
-      let stats = null;
-      if (Number.isFinite(result?.memberCount) && result.memberCount > 0) {
-        stats = {
-          count: Math.floor(result.memberCount),
-          icon: String(result?.community?.icon || ''),
-          age: String(result?.community?.age || ''),
-          description: String(result?.community?.description || ''),
-        };
-      } else if (existing.has(key)) {
-        stats = existing.get(key);
-      } else if (lookups < LOOKUP_MAX) {
-        lookups++;
-      } else {
-        continue;
+    if (source !== 'direct') {
+      for (const result of results) {
+        let name = String(result?.community?.subreddit || '').replace(/^r\//i, '');
+        if (!name) {
+          const match = String(result?.url || '').match(COMMUNITY_URL_RE);
+          if (match) name = match[1];
+        }
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        let stats = null;
+        if (Number.isFinite(result?.memberCount) && result.memberCount > 0) {
+          stats = {
+            count: Math.floor(result.memberCount),
+            icon: String(result?.community?.icon || ''),
+            age: String(result?.community?.age || ''),
+            description: String(result?.community?.description || ''),
+          };
+        } else if (existing.has(key)) {
+          stats = existing.get(key);
+        } else if (lookups < LOOKUP_MAX) {
+          lookups++;
+        } else {
+          continue;
+        }
+        candidates.push({ name, key, result, stats });
       }
-      candidates.push({ name, key, result, stats });
     }
 
     const pending = candidates.filter(candidate => !candidate.stats);
@@ -221,9 +305,11 @@ export const slot = {
     }
 
     const communities = [];
+    const mode = safeModes.get(context?.clientIp) ?? 'moderate';
     for (const candidate of candidates) {
       const stats = candidate.stats ?? statsCache.get(candidate.key)?.stats;
       if (!stats || !stats.count) continue;
+      if (stats.over18 && mode !== 'off') continue;
       communities.push({
         url: candidate.result.url,
         memberCount: stats.count,
@@ -273,5 +359,27 @@ export const slot = {
     return { title: 'Reddit Communities', html: _render({ content }) };
   },
 };
+
+export const routes = [
+  {
+    method: 'post',
+    path: '/safe-mode',
+    handler: async req => {
+      let body = {};
+      try {
+        body = await req.json();
+      } catch {}
+      const mode = ['off', 'moderate', 'strict'].includes(body?.safeMode) ? body.safeMode : 'moderate';
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || '';
+      if (ip) {
+        safeModes.set(ip, mode);
+        if (safeModes.size > 200) safeModes.delete(safeModes.keys().next().value);
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+  },
+];
 
 export default { slot };
