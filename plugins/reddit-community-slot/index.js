@@ -228,7 +228,7 @@ export const slot = {
         community.icon && context?.signProxyUrl
           ? _esc(context.signProxyUrl(String(community.icon)))
           : _esc(fallbackIcon);
-      const meta = [age, count].filter(Boolean).join(' · ');
+      const meta = [count, age].filter(Boolean).join(' · ');
 
       return (
         `<a href="${href}" class="rd-slot-card">` +

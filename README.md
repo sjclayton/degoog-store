@@ -17,7 +17,7 @@ not a replacement for your main engines.
 | Yandex Images        | Engine | 1.2.4   | images      | Image search with size, type and layout filters.                                                                                                 |
 | Yandex Videos        | Engine | 1.2.4   | videos      | Video search. Reads Yandex's JSON endpoint instead of parsing HTML.                                                                              |
 | Yandex Visual Search | Engine | 1.2.4   | images      | Reverse image search. Upload an image, or use the image tab, to find pages that contain it and images that look like it.                         |
-| Reddit Communities   | Plugin | 1.1.4   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
+| Reddit Communities   | Plugin | 1.1.5   | —           | Slot that shows the top Reddit communities by member count, age and description. Requires the Reddit engine.                                     |
 
 The Yandex web engine falls back to Yandex's legacy results page when the modern page
 returns nothing, Images and Videos do the same.
