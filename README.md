@@ -36,7 +36,7 @@ Mojeek throttles automated traffic with a `403` "automated queries" page, which 
 
 Loads the server-rendered `old.reddit.com` search page and parses the HTML. Results include posts and communities: posts open their discussion thread on `www.reddit.com` (link posts show the external domain in the snippet), and communities show their member count, age and description.
 
-Community counts come from Reddit's `about.json` endpoint and are cached briefly. The separate Reddit Communities slot plugin can show the top communities by members; set `Top communities count` in its settings. Turn off `Community member counts` in the engine settings to skip the extra lookups.
+Community member counts come from Reddit's `about.json` endpoint and are cached briefly. Turn off `Community member counts` in the engine settings to skip the extra lookups.
 
 Include `r/name` to search inside one community, for example `r/selfhosted degoog`. A `site:reddit.com` token is dropped because every result is already from Reddit.
 
@@ -48,16 +48,12 @@ A slot plugin that shows the top communities from Reddit results, sorted by memb
 
 When the Reddit engine is installed, the plugin uses the counts that engine attaches to its community results. It can also work on its own: paste a signed-in Reddit cookie into the plugin's `Reddit cookies` setting and it reads the count, age, icon and description from `about.json` for any `reddit.com/r/<name>` link in the results, including links returned by other engines. Without a cookie, only results that already carry a count can produce cards.
 
-The engine and the plugin install independently from the store; neither installs the other. Uninstalling the engine does not remove the plugin, but the `!r` bang goes away with the engine.
-
-Degoog does not request slot panels for bang searches. The plugin includes a small client script that handles `!r ...` searches: it reads the command results, asks the slot endpoint for the cards and places them above the results. Ordinary web searches use the normal slot path.
-
 ## Install
 
 1. Add this repository in degoog's store settings:
    `https://github.com/sjclayton/degoog-store.git`
 2. Open the repo in the store and install the engines and plugins you want.
-3. Enable the engines under Settings > Engines, and configure the slot plugin under Settings > Plugins if you installed it.
+3. Enable / configure the engines under Settings > Engines, and enable / configure the plugin under Settings > Plugins if you installed it.
 
 ## Transports
 
@@ -101,10 +97,10 @@ Settings for the Camoufox transport:
 If the Camoufox service runs on the same machine as degoog, use
 `http://127.0.0.1:53323` instead.
 
-### curl-fallback for the Yandex media engines
+### curl-fallback for the Yandex media engines and Mojeek
 
-Yandex Images, Videos and Visual Search do not need a browser. They default to
-`curl-fallback`, which tries Bun's `fetch` first and retries with curl on 403,
+Yandex Images, Videos and Visual Search and the Mojeek engine do not need a browser.
+They default to `curl-fallback`, which tries Bun's `fetch` first and retries with curl on 403,
 429, 502 and 503. Leave it alone unless you have a reason to change it. Leave
 the timeout empty to use the ten second default. Raise it to `20000` if you see
 timeouts. Plain `curl` also works if `curl-fallback` gives you trouble.
